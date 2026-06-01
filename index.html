@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#5f8f73">
-  <meta name="description" content="PWA per planificar sessions de classe, fer seguiment i reprogramar automàticament incidències.">
+  <meta name="description" content="PWA per planificar sessions de classe, fer seguiment i reprogramar automàticament incidències. Versió 0.2.">
   <title>Planificador docent · Sessions i seguiment de curs</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
@@ -101,13 +101,32 @@
       <div class="button-row wrap">
         <button id="btnUpdateGroup" type="button">Actualitza grup</button>
         <button id="btnRecalculate" class="secondary" type="button">Recalcula dates</button>
+        <span class="hint">Les sessions fetes, parcials o substituïdes amb data real no es mouran.</span>
       </div>
     </section>
 
     <section class="card full-width">
+      <h2>4. Avisos del grup</h2>
+      <div id="alertsPanel" class="alerts-panel"></div>
+    </section>
+
+    <section class="card full-width">
       <div class="section-title-row">
-        <h2>4. Sessions</h2>
+        <h2>5. Sessions</h2>
         <div class="button-row wrap">
+          <label class="inline-control">Filtra
+            <select id="sessionFilter">
+              <option value="totes">Totes</option>
+              <option value="prevista">Previstes</option>
+              <option value="feta">Fetes</option>
+              <option value="parcial">Parcials</option>
+              <option value="ajornada">Ajornades</option>
+              <option value="cancel·lada">Cancel·lades</option>
+              <option value="substituïda">Substituïdes</option>
+              <option value="reprogramades">Reprogramades</option>
+              <option value="fora">Fora de calendari</option>
+            </select>
+          </label>
           <button id="btnAddSession" type="button">Afegeix sessió</button>
           <button id="btnBulkSessions" class="secondary" type="button">Crea sessions ràpides</button>
         </div>
@@ -115,8 +134,21 @@
       <div id="sessionsList" class="list"></div>
     </section>
 
+    <section class="card full-width">
+      <div class="section-title-row">
+        <h2>6. Línia temporal</h2>
+        <label class="inline-control">Mostra
+          <select id="timelineMode">
+            <option value="sessions">Sessions</option>
+            <option value="incidencies">Incidències</option>
+          </select>
+        </label>
+      </div>
+      <div id="timelineList" class="timeline-list"></div>
+    </section>
+
     <section class="card">
-      <h2>5. Incidències</h2>
+      <h2>7. Incidències</h2>
       <div class="grid two">
         <label>Data
           <input id="incData" type="date">
@@ -152,12 +184,12 @@
     </section>
 
     <section class="card">
-      <h2>6. Estadístiques</h2>
+      <h2>8. Estadístiques</h2>
       <div id="statsPanel" class="stats-grid"></div>
     </section>
 
     <section class="card full-width">
-      <h2>7. Exportació, importació i resum</h2>
+      <h2>9. Exportació, importació i resum</h2>
       <div class="button-row wrap">
         <button id="btnExportAll" type="button">Exporta tot JSON</button>
         <button id="btnExportGroup" class="secondary" type="button">Exporta grup JSON</button>
@@ -171,10 +203,11 @@
 
     <section class="card full-width">
       <div class="section-title-row">
-        <h2>8. Diagnòstic PWA</h2>
+        <h2>10. Diagnòstic PWA</h2>
         <button id="btnDiagnostics" class="secondary" type="button">Comprova diagnòstic</button>
       </div>
       <div id="diagnostics" class="diagnostics"></div>
+      <p class="hint">Nombre de caches detectades: <strong id="cacheCount">-</strong></p>
       <div class="button-row wrap">
         <button id="btnClearCache" class="secondary" type="button">Esborra cache</button>
         <button id="btnClearData" class="danger" type="button">Esborra dades locals</button>
@@ -186,7 +219,7 @@
     <form method="dialog" class="dialog-content">
       <h2>Crea sessions ràpides</h2>
       <p>Escriu una sessió per línia. Pots escriure només el nom o separar camps amb punt i coma.</p>
-      <p class="hint">Exemple: Presentació; Introducció al projecte; Entendre el repte</p>
+      <p class="hint">Exemple: Presentació; Introducció al projecte; Entendre el repte; Projecte 1</p>
       <textarea id="bulkText" rows="10" placeholder="Sessió 1\nSessió 2\nNom; Què es treballarà; Objectiu"></textarea>
       <div class="button-row end">
         <button value="cancel" class="secondary" type="submit">Cancel·la</button>

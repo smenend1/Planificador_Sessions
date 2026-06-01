@@ -173,3 +173,48 @@ dialog { border: 0; border-radius: 18px; box-shadow: var(--shadow); width: min(9
   .card { border: 0; box-shadow: none; }
   .print-area.hidden { display: block !important; }
 }
+
+/* Millores v0.2 */
+.inline-control {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  font-weight: 800;
+}
+.inline-control select { min-width: 170px; padding: .55rem .7rem; }
+.alerts-panel { display: grid; gap: .6rem; }
+.alert-box, .ok-box {
+  border-radius: 14px;
+  padding: .8rem;
+  border: 1px solid var(--border);
+  font-weight: 700;
+}
+.alert-box { background: var(--warning-soft); }
+.ok-box { background: var(--primary-soft); color: var(--primary-dark); }
+.timeline-list { display: grid; gap: .55rem; }
+.timeline-item {
+  border: 1px solid var(--border);
+  border-left: 6px solid var(--primary);
+  border-radius: 14px;
+  padding: .7rem .85rem;
+  background: #fff;
+}
+.timeline-item.incidencia { border-left-color: #e28a42; background: #fffaf1; }
+.pill.small { font-size: .78rem; padding: .2rem .45rem; }
+.mini-actions { display: flex; gap: .35rem; flex-wrap: wrap; justify-content: flex-end; }
+.mini-actions button { padding: .55rem .7rem; }
+.fora-calendari { outline: 2px dashed #d9a934; }
+.stat-wide {
+  grid-column: 1 / -1;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: .75rem;
+  background: #fafffb;
+}
+.stat-wide .pill { margin: .2rem .15rem .2rem 0; }
+@media (max-width: 860px) {
+  .inline-control { align-items: stretch; flex-direction: column; width: 100%; }
+  .inline-control select { width: 100%; }
+  .mini-actions { justify-content: stretch; }
+  .mini-actions button { flex: 1; }
+}

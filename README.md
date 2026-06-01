@@ -1,67 +1,101 @@
 # Planificador docent · Sessions i seguiment de curs
 
-PWA educativa en català per planificar sessions de classe, fer seguiment del curs i reprogramar automàticament les sessions quan hi ha incidències.
+Versió: 0.2.0
+Idioma: català
+Pensada per a GitHub Pages i ús offline com a PWA.
 
-## Funcions de la versió 0.1.0
+## Finalitat
 
-- Creació de grups per nivell, grup i assignatura.
-- Definició de curs acadèmic, dates d'inici/final i dies de classe.
-- Sessions numerades amb títol, què es treballarà, objectiu, activitats, recursos i observacions.
-- Assignació automàtica de dates segons els dies de classe.
-- Incidències per vaga, falta del docent, excursió, festa, activitat de centre, avaluació o altres motius.
-- Reprogramació automàtica de sessions futures quan una data queda bloquejada.
-- Estats de sessió: prevista, feta, parcial, ajornada, cancel·lada i substituïda.
-- Estadístiques bàsiques de final de curs.
-- Exportació i importació JSON.
-- Resum HTML imprimible/desable com a PDF amb `window.print()`.
-- Desament local amb `localStorage`.
-- Service worker i cache bàsica per funcionament offline.
-- Diagnòstic PWA.
+Aquesta PWA permet planificar sessions de classe per curs, grup i assignatura, assignar dates automàticament segons els dies de classe, registrar incidències i reprogramar les sessions futures quan un dia no es pot fer classe.
+
+No substitueix una eina de programació didàctica completa. Està pensada per al dia a dia: saber què toca fer, què s'ha fet realment i què s'ha hagut d'ajornar.
+
+## Novetats de la versió 0.2.0
+
+- Migració automàtica de dades locals de la v0.1.0 quan existeixen.
+- Filtres de sessions per estat, reprogramades i fora de calendari.
+- Línia temporal de sessions i incidències.
+- Avisos del grup: dates incompletes, sessions sense data, sessions fora de calendari i incidències sense motiu.
+- Camp nou de bloc o unitat per sessió.
+- Botons per moure sessions amunt o avall.
+- Reprogramació més segura: les sessions fetes, parcials o substituïdes amb data real no es mouen.
+- Estadístiques ampliades, incloent incidències per tipus i sessions fora de calendari.
+- Importació JSON amb opció de substituir dades o afegir-les com a còpia.
+- Resum imprimible més complet.
+- Diagnòstic PWA amb recompte de caches detectades.
+
+## Fitxers
+
+- `index.html`: estructura de la interfície.
+- `styles.css`: disseny visual responsive.
+- `app.js`: lògica de dades, calendari, reprogramació, localStorage i exportació/importació.
+- `manifest.json`: configuració PWA.
+- `sw.js`: service worker i cache offline.
+- `README.md`: documentació.
+
+## Ús bàsic
+
+1. Crea un grup.
+2. Defineix nivell, grup, assignatura, dates del curs i dies de classe.
+3. Crea sessions manualment o en bloc.
+4. Prem `Recalcula dates` si canvies el calendari.
+5. Registra incidències quan hi hagi vaga, sortida, festa, absència o activitat de centre.
+6. Marca cada sessió com a feta, parcial, ajornada, cancel·lada o substituïda.
+7. Exporta una còpia JSON periòdicament.
+
+## Sessions ràpides
+
+Pots crear sessions en bloc amb una línia per sessió.
+
+Format simple:
+
+```text
+Presentació del projecte
+Construcció de prototips
+Avaluació final
+```
+
+Format complet:
+
+```text
+Títol; Què es treballarà; Objectiu; Bloc o unitat
+```
 
 ## Publicació a GitHub Pages
 
 1. Crea un repositori, per exemple `planificador-docent-sessions`.
-2. Puja aquests fitxers a l'arrel del repositori:
-   - `index.html`
-   - `styles.css`
-   - `app.js`
-   - `manifest.json`
-   - `sw.js`
-   - `README.md`
-3. Ves a **Settings > Pages**.
-4. Selecciona la branca principal i la carpeta arrel.
-5. Desa i obre l'URL que genera GitHub Pages.
+2. Puja tots els fitxers d'aquest ZIP a l'arrel del repositori.
+3. Ves a `Settings > Pages`.
+4. Tria la branca principal i la carpeta `/root`.
+5. Desa els canvis.
+6. Obre l'URL de GitHub Pages.
 
-## Dades
+## Còpies de seguretat
 
-Les dades es desen al navegador amb `localStorage`. És recomanable exportar una còpia JSON regularment.
+Les dades es desen al navegador amb `localStorage`. Això vol dir que són locals del dispositiu i del navegador. És recomanable exportar JSON sovint.
 
-## Reprogramació automàtica
+## Limitacions conegudes
 
-La reprogramació elimina del calendari els dies bloquejats per incidències amb acció `ajornar` o `cancel·lar` i assigna les sessions no completades als següents dies disponibles. Les sessions marcades com a `feta` conserven la seva data real.
+- Encara no hi ha calendari mensual visual.
+- No hi ha sincronització entre dispositius.
+- Les icones PWA són mínimes.
+- El PDF es genera amb la funció d'impressió del navegador.
 
-## Limitacions de la versió 0.1.0
+## Properes versions suggerides
 
-- No inclou encara vista mensual de calendari.
-- El manifest no inclou icones pròpies; es poden afegir en una versió posterior.
-- La generació de PDF es fa mitjançant la funció d'impressió del navegador.
-- No sincronitza dades entre dispositius.
-
-## Pla de versions
-
-### 0.2.0
-
-- Importació parcial per grup.
-- Millor duplicació per al curs següent.
-- Filtres per estat.
-- Resums per trimestre.
-
-### 0.3.0
+### v0.3.0
 
 - Vista mensual de calendari.
-- Colors per estat en calendari.
-- Millora de la impressió.
+- Colors visuals per estat dins el calendari.
+- Exportació CSV.
+- Resum per trimestre.
 
-### 1.0.0
+### v0.4.0
 
-- Versió estable, documentada i optimitzada per mòbil, tauleta i portàtil.
+- Blocs o unitats didàctiques més avançades.
+- Plantilles de sessions.
+- Duplicació selectiva de sessions.
+
+### v1.0.0
+
+- Versió estable, polida i documentada per a ús continuat.

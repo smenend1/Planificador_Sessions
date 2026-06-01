@@ -1,6 +1,6 @@
-const STORAGE_KEY = "planificadorDocentSessions.v040";
-const OLD_STORAGE_KEYS = ["planificadorDocentSessions.v032", "planificadorDocentSessions.v031", "planificadorDocentSessions.v030", "planificadorDocentSessions.v020", "planificadorDocentSessions.v010"];
-const APP_VERSION = "0.4.0";
+const STORAGE_KEY = "planificadorDocentSessions.v041";
+const OLD_STORAGE_KEYS = ["planificadorDocentSessions.v040", "planificadorDocentSessions.v032", "planificadorDocentSessions.v031", "planificadorDocentSessions.v030", "planificadorDocentSessions.v020", "planificadorDocentSessions.v010"];
+const APP_VERSION = "0.4.1";
 const WEEKDAYS = ["diumenge", "dilluns", "dimarts", "dimecres", "dijous", "divendres", "dissabte"];
 const CLASS_DAYS = ["dilluns", "dimarts", "dimecres", "dijous", "divendres"];
 const STATES = ["prevista", "feta", "parcial", "ajornada", "cancel·lada", "substituïda"];
@@ -10,6 +10,7 @@ let currentFilter = "totes";
 let timelineMode = "sessions";
 let calendarCursor = new Date();
 let weekCursor = new Date();
+let calendarView = localStorage.getItem("planificadorDocentSessions.calendarView") || "month";
 
 let data = loadData();
 let activeGroupId = data.grups[0]?.id || null;
@@ -339,7 +340,7 @@ function formatDate(value) { if (!value) return "Sense data"; const date = parse
 function escapeHtml(text) { return String(text || "").replace(/[&<>'"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c])); }
 
 function render() {
-  renderGeneralConfig(); renderGroups(); renderGroupEditor(); renderAlerts(); renderSessions(); renderCalendar(); renderWeekly(); renderTimeline(); renderIncidences(); renderStats(); renderGlobalStats(); renderDiagnostics();
+  renderGeneralConfig(); renderGroups(); renderGroupEditor(); renderAlerts(); renderSessions(); renderCalendar(); renderWeekly(); updateCalendarView(); renderTimeline(); renderIncidences(); renderStats(); renderGlobalStats(); renderDiagnostics();
 }
 
 function renderGeneralConfig() {
@@ -547,6 +548,31 @@ function setWeekToToday() {
   renderWeekly();
 }
 
+function updateCalendarView() {
+  const monthSection = $("calendarMonthlySection");
+  const weekSection = $("calendarWeeklySection");
+  const monthButton = $("btnViewMonth");
+  const weekButton = $("btnViewWeek");
+  if (!monthSection || !weekSection || !monthButton || !weekButton) return;
+  const showWeek = calendarView === "week";
+  monthSection.classList.toggle("is-hidden-view", showWeek);
+  weekSection.classList.toggle("is-hidden-view", !showWeek);
+  monthButton.classList.toggle("active", !showWeek);
+  weekButton.classList.toggle("active", showWeek);
+  monthButton.setAttribute("aria-pressed", String(!showWeek));
+  weekButton.setAttribute("aria-pressed", String(showWeek));
+}
+
+function setCalendarView(view, shouldScroll = true) {
+  calendarView = view === "week" ? "week" : "month";
+  localStorage.setItem("planificadorDocentSessions.calendarView", calendarView);
+  updateCalendarView();
+  if (shouldScroll) {
+    const target = calendarView === "week" ? $("calendarWeeklySection") : $("calendarMonthlySection");
+    target?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
 function showCalendarDay(iso) {
   const group = activeGroup();
   const details = $("calendarDetails");
@@ -694,7 +720,7 @@ function renderGlobalStats() {
 async function cacheCount() { if (!("caches" in window)) return "No disponible"; const keys = await caches.keys(); return keys.length; }
 function renderDiagnostics() {
   const localOk = testLocalStorage(); const swOk = "serviceWorker" in navigator; const online = navigator.onLine;
-  $("diagnostics").innerHTML = `<div class="diag-box"><strong>${swOk ? "Sí" : "No"}</strong><span>Service worker disponible</span></div><div class="diag-box"><strong>${online ? "Online" : "Offline"}</strong><span>Connexió actual</span></div><div class="diag-box"><strong>${localOk ? "Sí" : "No"}</strong><span>localStorage</span></div><div class="diag-box"><strong>${localStorage.getItem(STORAGE_KEY) ? "Sí" : "No"}</strong><span>Dades locals v0.4.0</span></div><div class="diag-box"><strong>${APP_VERSION}</strong><span>Versió</span></div><div class="diag-box"><strong>${data.app.dataModificacio || "-"}</strong><span>Últim canvi</span></div>`;
+  $("diagnostics").innerHTML = `<div class="diag-box"><strong>${swOk ? "Sí" : "No"}</strong><span>Service worker disponible</span></div><div class="diag-box"><strong>${online ? "Online" : "Offline"}</strong><span>Connexió actual</span></div><div class="diag-box"><strong>${localOk ? "Sí" : "No"}</strong><span>localStorage</span></div><div class="diag-box"><strong>${localStorage.getItem(STORAGE_KEY) ? "Sí" : "No"}</strong><span>Dades locals v0.4.1</span></div><div class="diag-box"><strong>${APP_VERSION}</strong><span>Versió</span></div><div class="diag-box"><strong>${data.app.dataModificacio || "-"}</strong><span>Últim canvi</span></div>`;
   cacheCount().then(n => { const el = $("cacheCount"); if (el) el.textContent = n; });
 }
 function testLocalStorage() { try { localStorage.setItem("__test", "1"); localStorage.removeItem("__test"); return true; } catch { return false; } }
@@ -782,7 +808,7 @@ function bindEvents() {
   $("btnDeleteGroup").addEventListener("click", deleteGroup);
   $("btnAddSession").addEventListener("click", () => addSession());
   $("btnAddIncidence").addEventListener("click", addIncidence);
-  $("btnExportAll").addEventListener("click", () => exportJson(data, `planificador-docent-${data.cursAcademic}-v040.json`));
+  $("btnExportAll").addEventListener("click", () => exportJson(data, `planificador-docent-${data.cursAcademic}-v041.json`));
   $("btnExportGroup").addEventListener("click", () => { const g = activeGroup(); if (g) exportJson(g, `${slug(`${g.nivell}-${g.grup}-${g.assignatura}`)}.json`); });
   $("btnExportCsv").addEventListener("click", exportGroupCsv);
   $("btnPrintSummary").addEventListener("click", printSummary);
@@ -794,6 +820,8 @@ function bindEvents() {
   $("btnPrevMonth").addEventListener("click", () => changeCalendarMonth(-1));
   $("btnNextMonth").addEventListener("click", () => changeCalendarMonth(1));
   $("btnTodayMonth").addEventListener("click", setCalendarToToday);
+  $("btnViewMonth").addEventListener("click", () => setCalendarView("month"));
+  $("btnViewWeek").addEventListener("click", () => setCalendarView("week"));
   $("btnPrevWeek").addEventListener("click", () => changeWeek(-1));
   $("btnNextWeek").addEventListener("click", () => changeWeek(1));
   $("btnTodayWeek").addEventListener("click", setWeekToToday);

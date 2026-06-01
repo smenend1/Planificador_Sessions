@@ -1,10 +1,10 @@
 # Planificador docent · Sessions i seguiment de curs
 
-Versió 0.4.0.
+Versió 0.4.1.
 
 PWA educativa en català per planificar sessions de classe per curs, grup i assignatura, fer seguiment del curs i reprogramar automàticament les sessions quan hi ha incidències.
 
-## Novetats de la v0.4.0
+## Novetats de la v0.4.1
 
 - Vista setmanal de dilluns a divendres, amb navegació per setmana anterior, aquesta setmana i setmana següent.
 - Afegir sessions directament des de qualsevol dia de la vista setmanal.
@@ -62,3 +62,11 @@ Aquesta versió no depèn de cap llibreria externa.
 - Resum trimestral avançat.
 - Etiquetes per projectes o situacions d'aprenentatge.
 - Millor compatibilitat amb còpies entre dispositius.
+
+
+## Novetats v0.4.1
+
+- Selector visible **Mensual / Setmanal** abans del calendari.
+- En mòbil només es mostra la vista triada per evitar haver de baixar massa avall.
+- La vista setmanal és més clara en pantalles petites.
+- Migració automàtica de dades des de v0.4.0 i versions anteriors.

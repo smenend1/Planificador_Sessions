@@ -403,3 +403,56 @@ dialog { border: 0; border-radius: 18px; box-shadow: var(--shadow); width: min(9
   .week-grid { grid-template-columns: 1fr; }
   .week-day { min-height: auto; }
 }
+
+/* Ajustos v0.4.1: selector clar de vista mensual/setmanal */
+.view-switch-card {
+  padding: .85rem 1rem;
+}
+.compact-title-row {
+  margin-bottom: 0;
+}
+.segmented-controls {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  gap: .35rem;
+  background: var(--primary-soft);
+  border-radius: 999px;
+  padding: .25rem;
+}
+.segmented-controls .view-tab {
+  background: transparent;
+  color: var(--primary-dark);
+  box-shadow: none;
+  border-radius: 999px;
+}
+.segmented-controls .view-tab.active {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(95, 143, 115, .18);
+}
+.calendar-view-section.is-hidden-view {
+  display: none;
+}
+@media (max-width: 860px) {
+  .view-switch-card {
+    position: sticky;
+    top: .5rem;
+    z-index: 9;
+  }
+  .segmented-controls {
+    width: 100%;
+    border-radius: 18px;
+  }
+  .segmented-controls .view-tab {
+    width: 100%;
+    padding: .85rem .5rem;
+  }
+}
+@media (max-width: 520px) {
+  .week-event, .week-inc {
+    font-size: .92rem;
+  }
+  .week-day header strong {
+    font-size: 1.05rem;
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Planificador docent · Sessions i seguiment de curs",
+  "short_name": "Planificador docent",
+  "description": "PWA en català per planificar sessions, reprogramar incidències i fer seguiment de curs.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f8f2",
+  "theme_color": "#5f8f73",
+  "lang": "ca",
+  "orientation": "any",
+  "icons": []
+}

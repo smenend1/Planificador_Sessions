@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="ca">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#5f8f73">
+  <meta name="description" content="PWA per planificar sessions de classe, fer seguiment i reprogramar automàticament incidències.">
+  <title>Planificador docent · Sessions i seguiment de curs</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">PWA educativa</p>
+      <h1>Planificador docent</h1>
+      <p>Sessions i seguiment de curs</p>
+    </div>
+    <div class="header-actions">
+      <span id="saveStatus" class="status-pill">Preparat</span>
+      <button id="btnInstall" class="secondary hidden" type="button">Instal·la</button>
+      <button id="btnSave" type="button">Desa ara</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="card full-width intro-card">
+      <div>
+        <h2>Planificació viva del curs</h2>
+        <p>Crea grups, introdueix sessions, assigna dates automàticament i reprograma quan hi ha vagues, sortides, festes o altres incidències.</p>
+      </div>
+      <div class="quick-stats" id="globalStats"></div>
+    </section>
+
+    <section class="card">
+      <h2>1. Configuració general</h2>
+      <div class="grid two">
+        <label>Curs acadèmic
+          <input id="cursAcademic" type="text" placeholder="2025-2026">
+        </label>
+        <label>Nom del centre
+          <input id="nomCentre" type="text" placeholder="Institut...">
+        </label>
+        <label>Docent
+          <input id="docent" type="text" placeholder="Nom del docent">
+        </label>
+        <label>Dies no lectius generals
+          <textarea id="diesNoLectiusGenerals" rows="3" placeholder="Una data per línia: 2025-12-08"></textarea>
+        </label>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title-row">
+        <h2>2. Grups</h2>
+        <button id="btnNewGroup" type="button">Nou grup</button>
+      </div>
+      <label>Grup actiu
+        <select id="groupSelector"></select>
+      </label>
+      <div class="button-row wrap">
+        <button id="btnDuplicateGroup" class="secondary" type="button">Duplica grup</button>
+        <button id="btnNextYear" class="secondary" type="button">Reutilitza curs següent</button>
+        <button id="btnDeleteGroup" class="danger" type="button">Elimina grup</button>
+      </div>
+    </section>
+
+    <section class="card full-width" id="groupEditorCard">
+      <h2>3. Dades del grup</h2>
+      <div class="grid three">
+        <label>Nivell
+          <select id="nivell">
+            <option>1r ESO</option><option>2n ESO</option><option>3r ESO</option><option>4t ESO</option>
+            <option>1r Batxillerat</option><option>2n Batxillerat</option>
+          </select>
+        </label>
+        <label>Grup
+          <input id="grup" type="text" placeholder="A, B, C...">
+        </label>
+        <label>Assignatura
+          <input id="assignatura" type="text" placeholder="Tecnologia i Digitalització">
+        </label>
+        <label>Data d'inici
+          <input id="dataInici" type="date">
+        </label>
+        <label>Data final
+          <input id="dataFinal" type="date">
+        </label>
+        <label>Notes generals
+          <input id="notesGenerals" type="text" placeholder="Opcional">
+        </label>
+      </div>
+      <fieldset class="weekday-box">
+        <legend>Dies de classe</legend>
+        <label><input type="checkbox" name="diesSetmana" value="dilluns"> Dilluns</label>
+        <label><input type="checkbox" name="diesSetmana" value="dimarts"> Dimarts</label>
+        <label><input type="checkbox" name="diesSetmana" value="dimecres"> Dimecres</label>
+        <label><input type="checkbox" name="diesSetmana" value="dijous"> Dijous</label>
+        <label><input type="checkbox" name="diesSetmana" value="divendres"> Divendres</label>
+      </fieldset>
+      <div class="button-row wrap">
+        <button id="btnUpdateGroup" type="button">Actualitza grup</button>
+        <button id="btnRecalculate" class="secondary" type="button">Recalcula dates</button>
+      </div>
+    </section>
+
+    <section class="card full-width">
+      <div class="section-title-row">
+        <h2>4. Sessions</h2>
+        <div class="button-row wrap">
+          <button id="btnAddSession" type="button">Afegeix sessió</button>
+          <button id="btnBulkSessions" class="secondary" type="button">Crea sessions ràpides</button>
+        </div>
+      </div>
+      <div id="sessionsList" class="list"></div>
+    </section>
+
+    <section class="card">
+      <h2>5. Incidències</h2>
+      <div class="grid two">
+        <label>Data
+          <input id="incData" type="date">
+        </label>
+        <label>Tipus
+          <select id="incTipus">
+            <option value="vaga">Vaga</option>
+            <option value="falta_docent">Falta del docent</option>
+            <option value="sortida">Excursió / sortida</option>
+            <option value="festa">Festa</option>
+            <option value="activitat_centre">Activitat de centre</option>
+            <option value="avaluacio">Avaluació</option>
+            <option value="altres">Altres</option>
+          </select>
+        </label>
+        <label>Motiu
+          <input id="incMotiu" type="text" placeholder="Excursió, festa local...">
+        </label>
+        <label>Acció
+          <select id="incAccio">
+            <option value="ajornar">Ajornar</option>
+            <option value="cancel·lar">Cancel·lar</option>
+            <option value="substituir">Substituir</option>
+            <option value="mantenir">Mantenir</option>
+          </select>
+        </label>
+      </div>
+      <label>Observacions
+        <textarea id="incObservacions" rows="2"></textarea>
+      </label>
+      <button id="btnAddIncidence" type="button">Afegeix incidència</button>
+      <div id="incidencesList" class="list compact"></div>
+    </section>
+
+    <section class="card">
+      <h2>6. Estadístiques</h2>
+      <div id="statsPanel" class="stats-grid"></div>
+    </section>
+
+    <section class="card full-width">
+      <h2>7. Exportació, importació i resum</h2>
+      <div class="button-row wrap">
+        <button id="btnExportAll" type="button">Exporta tot JSON</button>
+        <button id="btnExportGroup" class="secondary" type="button">Exporta grup JSON</button>
+        <label class="file-button">Importa JSON
+          <input id="importFile" type="file" accept="application/json,.json">
+        </label>
+        <button id="btnPrintSummary" class="secondary" type="button">Resum HTML/PDF</button>
+      </div>
+      <div id="printArea" class="print-area hidden"></div>
+    </section>
+
+    <section class="card full-width">
+      <div class="section-title-row">
+        <h2>8. Diagnòstic PWA</h2>
+        <button id="btnDiagnostics" class="secondary" type="button">Comprova diagnòstic</button>
+      </div>
+      <div id="diagnostics" class="diagnostics"></div>
+      <div class="button-row wrap">
+        <button id="btnClearCache" class="secondary" type="button">Esborra cache</button>
+        <button id="btnClearData" class="danger" type="button">Esborra dades locals</button>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="bulkDialog">
+    <form method="dialog" class="dialog-content">
+      <h2>Crea sessions ràpides</h2>
+      <p>Escriu una sessió per línia. Pots escriure només el nom o separar camps amb punt i coma.</p>
+      <p class="hint">Exemple: Presentació; Introducció al projecte; Entendre el repte</p>
+      <textarea id="bulkText" rows="10" placeholder="Sessió 1\nSessió 2\nNom; Què es treballarà; Objectiu"></textarea>
+      <div class="button-row end">
+        <button value="cancel" class="secondary" type="submit">Cancel·la</button>
+        <button id="btnConfirmBulk" value="default" type="button">Crea</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>

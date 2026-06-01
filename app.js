@@ -1,6 +1,6 @@
-const STORAGE_KEY = "planificadorDocentSessions.v030";
-const OLD_STORAGE_KEYS = ["planificadorDocentSessions.v020", "planificadorDocentSessions.v010"];
-const APP_VERSION = "0.3.0";
+const STORAGE_KEY = "planificadorDocentSessions.v031";
+const OLD_STORAGE_KEYS = ["planificadorDocentSessions.v030", "planificadorDocentSessions.v020", "planificadorDocentSessions.v010"];
+const APP_VERSION = "0.3.1";
 const WEEKDAYS = ["diumenge", "dilluns", "dimarts", "dimecres", "dijous", "divendres", "dissabte"];
 const CLASS_DAYS = ["dilluns", "dimarts", "dimecres", "dijous", "divendres"];
 const STATES = ["prevista", "feta", "parcial", "ajornada", "cancel·lada", "substituïda"];
@@ -196,13 +196,12 @@ function duplicateGroup(nextYear = false) {
   }, i));
   copy.incidencies = [];
   if (nextYear) {
-    data.cursAcademic = copy.cursAcademic;
     copy.dataInici = "";
     copy.dataFinal = "";
   }
   data.grups.push(copy);
-  activeGroupId = copy.id;
-  saveData(nextYear ? "Planificació preparada per al curs següent" : "Grup duplicat");
+  if (!nextYear) activeGroupId = copy.id;
+  saveData(nextYear ? "Còpia del curs següent creada sense canviar el curs actiu" : "Grup duplicat");
 }
 
 function nextAcademicYear(value) {
@@ -465,7 +464,7 @@ function renderCalendar() {
     const isClassDay = group.diesSetmana.includes(weekday);
     const isGeneralBlocked = generalBlocked.has(iso);
     const classes = ["calendar-day", inMonth ? "" : "muted-month", isClassDay ? "class-day" : "", iso === today ? "today" : "", (incs.length || isGeneralBlocked) ? "blocked" : ""].filter(Boolean).join(" ");
-    const sessionHtml = sessions.slice(0, 3).map(s => `<button class="calendar-event estat-${s.estat}" type="button" data-action="show-calendar-day" data-date="${iso}">S${s.num} · ${escapeHtml(s.titol || s.estat)}</button>`).join("");
+    const sessionHtml = sessions.slice(0, 3).map(s => `<button class="calendar-event estat-${s.estat}" type="button" data-action="edit-calendar-session" data-id="${s.id}" title="Edita la sessió">S${s.num} · ${escapeHtml(s.titol || s.estat)}</button>`).join("");
     const more = sessions.length > 3 ? `<button class="calendar-more" type="button" data-action="show-calendar-day" data-date="${iso}">+${sessions.length - 3} més</button>` : "";
     const incHtml = incs.length ? `<button class="calendar-inc" type="button" data-action="show-calendar-day" data-date="${iso}">Incidència</button>` : "";
     const generalHtml = isGeneralBlocked ? `<button class="calendar-inc" type="button" data-action="show-calendar-day" data-date="${iso}">No lectiu</button>` : "";
@@ -495,9 +494,46 @@ function showCalendarDay(iso) {
   const incidencies = group.incidencies.filter(i => i.data === iso);
   const general = (data.configuracio.diesNoLectiusGenerals || []).includes(iso);
   const weekday = WEEKDAYS[parseDate(iso).getDay()];
-  const sessionHtml = sessions.length ? sessions.map(s => `<li><strong>Sessió ${s.num}: ${escapeHtml(s.titol || "Sense títol")}</strong> · ${escapeHtml(s.estat)}${s.queEsTreballa ? `<br><span>${escapeHtml(s.queEsTreballa)}</span>` : ""}</li>`).join("") : `<li>No hi ha sessions previstes.</li>`;
+  const sessionHtml = sessions.length ? sessions.map(s => `<li><strong>Sessió ${s.num}: ${escapeHtml(s.titol || "Sense títol")}</strong> · ${escapeHtml(s.estat)}${s.queEsTreballa ? `<br><span>${escapeHtml(s.queEsTreballa)}</span>` : ""}<br><button class="secondary small-button" type="button" data-action="edit-calendar-session" data-id="${s.id}">Edita sessió</button></li>`).join("") : `<li>No hi ha sessions previstes.</li>`;
   const incHtml = incidencies.length ? incidencies.map(i => `<li>${escapeHtml(i.motiu || i.tipus)} · ${escapeHtml(i.accio)}</li>`).join("") : "";
   details.innerHTML = `<div class="calendar-day-detail"><h3>${formatDate(iso)}</h3><p>${group.diesSetmana.includes(weekday) ? "Dia de classe configurat" : "No és un dia de classe configurat"}${general ? " · dia no lectiu general" : ""}</p><h4>Sessions</h4><ul>${sessionHtml}</ul>${incidencies.length || general ? `<h4>Incidències o bloquejos</h4><ul>${incHtml}${general ? "<li>Dia no lectiu general</li>" : ""}</ul>` : ""}</div>`;
+}
+
+function openSessionEditor(id) {
+  const group = activeGroup();
+  const session = group?.sessions.find(s => s.id === id);
+  const dialog = $("sessionDialog");
+  if (!group || !session || !dialog) return;
+  $("sessionDialogId").value = session.id;
+  $("sessionDialogTitle").textContent = `Edita sessió ${session.num}`;
+  $("sessionEditTitol").value = session.titol || "";
+  $("sessionEditBloc").value = session.bloc || "";
+  $("sessionEditQue").value = session.queEsTreballa || "";
+  $("sessionEditObjectiu").value = session.objectiu || "";
+  $("sessionEditActivitats").value = listToText(session.activitats);
+  $("sessionEditRecursos").value = listToText(session.recursos);
+  $("sessionEditEstat").innerHTML = STATES.map(state => `<option value="${state}" ${state === session.estat ? "selected" : ""}>${state}</option>`).join("");
+  $("sessionEditDataReal").value = session.dataReal || "";
+  $("sessionEditObservacions").value = session.observacions || "";
+  $("sessionEditMeta").textContent = `Data prevista: ${formatDate(session.dataPrevista)}${session.reprogramada ? " · reprogramada" : ""}${session.foraCalendari ? " · fora de calendari" : ""}`;
+  dialog.showModal();
+}
+
+function saveSessionEditor() {
+  const id = $("sessionDialogId")?.value;
+  if (!id) return;
+  updateSession(id, {
+    titol: $("sessionEditTitol").value.trim(),
+    bloc: $("sessionEditBloc").value.trim(),
+    queEsTreballa: $("sessionEditQue").value.trim(),
+    objectiu: $("sessionEditObjectiu").value.trim(),
+    activitats: stringToList($("sessionEditActivitats").value),
+    recursos: stringToList($("sessionEditRecursos").value),
+    estat: $("sessionEditEstat").value,
+    dataReal: $("sessionEditDataReal").value || null,
+    observacions: $("sessionEditObservacions").value.trim()
+  });
+  $("sessionDialog")?.close();
 }
 
 function renderTimeline() {
@@ -555,7 +591,7 @@ function renderGlobalStats() {
 async function cacheCount() { if (!("caches" in window)) return "No disponible"; const keys = await caches.keys(); return keys.length; }
 function renderDiagnostics() {
   const localOk = testLocalStorage(); const swOk = "serviceWorker" in navigator; const online = navigator.onLine;
-  $("diagnostics").innerHTML = `<div class="diag-box"><strong>${swOk ? "Sí" : "No"}</strong><span>Service worker disponible</span></div><div class="diag-box"><strong>${online ? "Online" : "Offline"}</strong><span>Connexió actual</span></div><div class="diag-box"><strong>${localOk ? "Sí" : "No"}</strong><span>localStorage</span></div><div class="diag-box"><strong>${localStorage.getItem(STORAGE_KEY) ? "Sí" : "No"}</strong><span>Dades locals v0.3</span></div><div class="diag-box"><strong>${APP_VERSION}</strong><span>Versió</span></div><div class="diag-box"><strong>${data.app.dataModificacio || "-"}</strong><span>Últim canvi</span></div>`;
+  $("diagnostics").innerHTML = `<div class="diag-box"><strong>${swOk ? "Sí" : "No"}</strong><span>Service worker disponible</span></div><div class="diag-box"><strong>${online ? "Online" : "Offline"}</strong><span>Connexió actual</span></div><div class="diag-box"><strong>${localOk ? "Sí" : "No"}</strong><span>localStorage</span></div><div class="diag-box"><strong>${localStorage.getItem(STORAGE_KEY) ? "Sí" : "No"}</strong><span>Dades locals v0.3.1</span></div><div class="diag-box"><strong>${APP_VERSION}</strong><span>Versió</span></div><div class="diag-box"><strong>${data.app.dataModificacio || "-"}</strong><span>Últim canvi</span></div>`;
   cacheCount().then(n => { const el = $("cacheCount"); if (el) el.textContent = n; });
 }
 function testLocalStorage() { try { localStorage.setItem("__test", "1"); localStorage.removeItem("__test"); return true; } catch { return false; } }
@@ -596,7 +632,7 @@ function bindEvents() {
   $("btnDeleteGroup").addEventListener("click", deleteGroup);
   $("btnAddSession").addEventListener("click", () => addSession());
   $("btnAddIncidence").addEventListener("click", addIncidence);
-  $("btnExportAll").addEventListener("click", () => exportJson(data, `planificador-docent-${data.cursAcademic}-v030.json`));
+  $("btnExportAll").addEventListener("click", () => exportJson(data, `planificador-docent-${data.cursAcademic}-v031.json`));
   $("btnExportGroup").addEventListener("click", () => { const g = activeGroup(); if (g) exportJson(g, `${slug(`${g.nivell}-${g.grup}-${g.assignatura}`)}.json`); });
   $("btnPrintSummary").addEventListener("click", printSummary);
   $("btnDiagnostics").addEventListener("click", renderDiagnostics);
@@ -609,9 +645,10 @@ function bindEvents() {
   $("importFile").addEventListener("change", (e) => e.target.files[0] && importJson(e.target.files[0]));
   $("btnBulkSessions").addEventListener("click", () => $("bulkDialog").showModal());
   $("btnConfirmBulk").addEventListener("click", () => { const lines = $("bulkText").value.split("\n").map(x => x.trim()).filter(Boolean); lines.forEach(line => { const [titol, queEsTreballa, objectiu, bloc] = line.split(";").map(x => x?.trim() || ""); addSession({ titol, queEsTreballa, objectiu, bloc }); }); $("bulkText").value = ""; $("bulkDialog").close(); saveData("Sessions creades"); });
+  $("btnSaveSessionDialog").addEventListener("click", saveSessionEditor);
   ["cursAcademic", "nomCentre", "docent", "diesNoLectiusGenerals"].forEach(id => { $(id).addEventListener("change", () => { data.cursAcademic = $("cursAcademic").value.trim() || guessAcademicYear(); data.configuracio.nomCentre = $("nomCentre").value.trim(); data.configuracio.docent = $("docent").value.trim(); data.configuracio.diesNoLectiusGenerals = $("diesNoLectiusGenerals").value.split("\n").map(x => x.trim()).filter(Boolean); data.grups.forEach(recalculateGroup); saveData("Configuració actualitzada"); }); });
   document.body.addEventListener("change", (e) => { const target = e.target; if (target.dataset.action === "edit-session") updateSession(target.dataset.id, { [target.dataset.field]: target.value || null }); if (target.dataset.action === "edit-session-list") updateSession(target.dataset.id, { [target.dataset.field]: stringToList(target.value) }); });
-  document.body.addEventListener("click", (e) => { const button = e.target.closest("button"); if (!button) return; if (button.dataset.action === "delete-session") deleteSession(button.dataset.id); if (button.dataset.action === "delete-incidence") deleteIncidence(button.dataset.id); if (button.dataset.action === "move-up") moveSession(button.dataset.id, -1); if (button.dataset.action === "move-down") moveSession(button.dataset.id, 1); if (button.dataset.action === "show-calendar-day") showCalendarDay(button.dataset.date); });
+  document.body.addEventListener("click", (e) => { const button = e.target.closest("button"); if (!button) return; if (button.dataset.action === "delete-session") deleteSession(button.dataset.id); if (button.dataset.action === "delete-incidence") deleteIncidence(button.dataset.id); if (button.dataset.action === "move-up") moveSession(button.dataset.id, -1); if (button.dataset.action === "move-down") moveSession(button.dataset.id, 1); if (button.dataset.action === "show-calendar-day") showCalendarDay(button.dataset.date); if (button.dataset.action === "edit-calendar-session") openSessionEditor(button.dataset.id); });
   $("btnClearData").addEventListener("click", () => { if (!confirm("Aquesta acció eliminarà totes les planificacions desades en aquest navegador. Vols continuar?")) return; localStorage.removeItem(STORAGE_KEY); data = defaultData(); activeGroupId = null; render(); });
   $("btnClearCache").addEventListener("click", async () => { if (!("caches" in window)) return alert("Aquest navegador no informa de cap cache disponible."); const keys = await caches.keys(); await Promise.all(keys.map(key => caches.delete(key))); alert("Cache esborrada. Recarrega l'aplicació."); });
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installPrompt = e; $("btnInstall").classList.remove("hidden"); });

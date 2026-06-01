@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#5f8f73">
-  <meta name="description" content="PWA per planificar sessions de classe, fer seguiment i reprogramar automàticament incidències. Versió 0.3.">
+  <meta name="description" content="PWA per planificar sessions de classe, fer seguiment i reprogramar automàticament incidències. Versió 0.3.1.">
   <title>Planificador docent · Sessions i seguiment de curs</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
@@ -238,6 +238,47 @@
       <div class="button-row end">
         <button value="cancel" class="secondary" type="submit">Cancel·la</button>
         <button id="btnConfirmBulk" value="default" type="button">Crea</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="sessionDialog">
+    <form method="dialog" class="dialog-content session-dialog-content">
+      <h2 id="sessionDialogTitle">Edita sessió</h2>
+      <p id="sessionEditMeta" class="hint"></p>
+      <input id="sessionDialogId" type="hidden">
+      <div class="grid two">
+        <label>Nom de la sessió
+          <input id="sessionEditTitol" type="text">
+        </label>
+        <label>Bloc o unitat
+          <input id="sessionEditBloc" type="text" placeholder="Opcional">
+        </label>
+        <label class="wide">Què es treballarà?
+          <textarea id="sessionEditQue" rows="3"></textarea>
+        </label>
+        <label class="wide">Objectiu
+          <textarea id="sessionEditObjectiu" rows="2"></textarea>
+        </label>
+        <label>Estat
+          <select id="sessionEditEstat"></select>
+        </label>
+        <label>Data real
+          <input id="sessionEditDataReal" type="date">
+        </label>
+        <label>Activitats, una per línia
+          <textarea id="sessionEditActivitats" rows="4"></textarea>
+        </label>
+        <label>Recursos, un per línia
+          <textarea id="sessionEditRecursos" rows="4"></textarea>
+        </label>
+        <label class="wide">Observacions de seguiment
+          <textarea id="sessionEditObservacions" rows="3"></textarea>
+        </label>
+      </div>
+      <div class="button-row end">
+        <button value="cancel" class="secondary" type="submit">Tanca</button>
+        <button id="btnSaveSessionDialog" value="default" type="button">Desa sessió</button>
       </div>
     </form>
   </dialog>

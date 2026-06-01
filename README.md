@@ -1,10 +1,18 @@
 # Planificador docent · Sessions i seguiment de curs
 
-Versió 0.3.0.
+Versió 0.3.1.
 
 PWA educativa en català per planificar sessions de classe per curs, grup i assignatura, fer seguiment del curs i reprogramar automàticament les sessions quan hi ha incidències.
 
-## Novetats de la v0.3.0
+
+## Correccions de la v0.3.1
+
+- El botó **Reutilitza curs següent** ja no canvia el curs general actiu ni et mou automàticament a la còpia nova.
+- Les sessions del calendari mensual ara obren un editor ràpid en clicar-hi.
+- L’editor ràpid permet modificar nom de la sessió, bloc/unitat, què es treballarà, objectiu, activitats, recursos, estat, data real i observacions.
+- La versió migra automàticament dades locals de la v0.3.0, v0.2.0 i v0.1.0.
+
+## Novetats de la v0.3.1
 
 - Vista mensual de calendari.
 - Navegació per mes anterior, mes actual i mes següent.

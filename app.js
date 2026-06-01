@@ -1,6 +1,6 @@
-const STORAGE_KEY = "planificadorDocentSessions.v031";
-const OLD_STORAGE_KEYS = ["planificadorDocentSessions.v030", "planificadorDocentSessions.v020", "planificadorDocentSessions.v010"];
-const APP_VERSION = "0.3.1";
+const STORAGE_KEY = "planificadorDocentSessions.v032";
+const OLD_STORAGE_KEYS = ["planificadorDocentSessions.v031", "planificadorDocentSessions.v030", "planificadorDocentSessions.v020", "planificadorDocentSessions.v010"];
+const APP_VERSION = "0.3.2";
 const WEEKDAYS = ["diumenge", "dilluns", "dimarts", "dimecres", "dijous", "divendres", "dissabte"];
 const CLASS_DAYS = ["dilluns", "dimarts", "dimecres", "dijous", "divendres"];
 const STATES = ["prevista", "feta", "parcial", "ajornada", "cancel·lada", "substituïda"];
@@ -95,7 +95,8 @@ function normalizeSession(session = {}, index = 0) {
     reprogramada: Boolean(session.reprogramada),
     motiuReprogramacio: session.motiuReprogramacio || "",
     substitucio: session.substitucio || { hiHaSubstitucio: false, descripcio: "" },
-    foraCalendari: Boolean(session.foraCalendari)
+    foraCalendari: Boolean(session.foraCalendari),
+    dataFixadaManualment: Boolean(session.dataFixadaManualment)
   };
 }
 
@@ -290,12 +291,21 @@ function deleteIncidence(id) {
 
 function recalculateGroup(group) {
   if (!group.dataInici || !group.dataFinal || !group.diesSetmana.length) return;
-  const availableDays = generateClassDays(group);
+  const fixedDates = new Set(group.sessions
+    .filter(s => s.dataFixadaManualment && s.dataPrevista && s.estat !== "cancel·lada")
+    .map(s => s.dataPrevista));
+  const availableDays = generateClassDays(group).filter(day => !fixedDates.has(day));
   let dayIndex = 0;
   group.sessions.forEach(session => {
     session.foraCalendari = false;
     if (["feta", "parcial", "substituïda"].includes(session.estat) && session.dataReal) return;
     if (session.estat === "cancel·lada") return;
+    if (session.dataFixadaManualment && session.dataPrevista) {
+      if (!session.dataOriginal) session.dataOriginal = session.dataPrevista;
+      session.reprogramada = false;
+      session.foraCalendari = false;
+      return;
+    }
     const nextDate = availableDays[dayIndex] || "";
     if (!session.dataOriginal && nextDate) session.dataOriginal = nextDate;
     const oldDate = session.dataPrevista;
@@ -496,7 +506,27 @@ function showCalendarDay(iso) {
   const weekday = WEEKDAYS[parseDate(iso).getDay()];
   const sessionHtml = sessions.length ? sessions.map(s => `<li><strong>Sessió ${s.num}: ${escapeHtml(s.titol || "Sense títol")}</strong> · ${escapeHtml(s.estat)}${s.queEsTreballa ? `<br><span>${escapeHtml(s.queEsTreballa)}</span>` : ""}<br><button class="secondary small-button" type="button" data-action="edit-calendar-session" data-id="${s.id}">Edita sessió</button></li>`).join("") : `<li>No hi ha sessions previstes.</li>`;
   const incHtml = incidencies.length ? incidencies.map(i => `<li>${escapeHtml(i.motiu || i.tipus)} · ${escapeHtml(i.accio)}</li>`).join("") : "";
-  details.innerHTML = `<div class="calendar-day-detail"><h3>${formatDate(iso)}</h3><p>${group.diesSetmana.includes(weekday) ? "Dia de classe configurat" : "No és un dia de classe configurat"}${general ? " · dia no lectiu general" : ""}</p><h4>Sessions</h4><ul>${sessionHtml}</ul>${incidencies.length || general ? `<h4>Incidències o bloquejos</h4><ul>${incHtml}${general ? "<li>Dia no lectiu general</li>" : ""}</ul>` : ""}</div>`;
+  details.innerHTML = `<div class="calendar-day-detail"><h3>${formatDate(iso)}</h3><p>${group.diesSetmana.includes(weekday) ? "Dia de classe configurat" : "No és un dia de classe configurat"}${general ? " · dia no lectiu general" : ""}</p><div class="button-row wrap"><button type="button" data-action="add-calendar-session" data-date="${iso}">Afegeix sessió aquest dia</button></div><h4>Sessions</h4><ul>${sessionHtml}</ul>${incidencies.length || general ? `<h4>Incidències o bloquejos</h4><ul>${incHtml}${general ? "<li>Dia no lectiu general</li>" : ""}</ul>` : ""}</div>`;
+  if (!sessions.length && !incidencies.length && !general) openNewSessionEditor(iso);
+}
+
+function openNewSessionEditor(iso) {
+  const group = activeGroup();
+  const dialog = $("sessionDialog");
+  if (!group || !dialog) return;
+  $("sessionDialogId").value = `NEW::${iso}`;
+  $("sessionDialogTitle").textContent = `Nova sessió · ${formatDate(iso)}`;
+  $("sessionEditTitol").value = "";
+  $("sessionEditBloc").value = "";
+  $("sessionEditQue").value = "";
+  $("sessionEditObjectiu").value = "";
+  $("sessionEditActivitats").value = "";
+  $("sessionEditRecursos").value = "";
+  $("sessionEditEstat").innerHTML = STATES.map(state => `<option value="${state}" ${state === "prevista" ? "selected" : ""}>${state}</option>`).join("");
+  $("sessionEditDataReal").value = "";
+  $("sessionEditObservacions").value = "";
+  $("sessionEditMeta").textContent = `Data prevista fixada manualment: ${formatDate(iso)}`;
+  dialog.showModal();
 }
 
 function openSessionEditor(id) {
@@ -522,7 +552,7 @@ function openSessionEditor(id) {
 function saveSessionEditor() {
   const id = $("sessionDialogId")?.value;
   if (!id) return;
-  updateSession(id, {
+  const patch = {
     titol: $("sessionEditTitol").value.trim(),
     bloc: $("sessionEditBloc").value.trim(),
     queEsTreballa: $("sessionEditQue").value.trim(),
@@ -532,7 +562,19 @@ function saveSessionEditor() {
     estat: $("sessionEditEstat").value,
     dataReal: $("sessionEditDataReal").value || null,
     observacions: $("sessionEditObservacions").value.trim()
-  });
+  };
+  if (id.startsWith("NEW::")) {
+    const iso = id.replace("NEW::", "");
+    addSession({
+      ...patch,
+      dataPrevista: iso,
+      dataOriginal: iso,
+      dataFixadaManualment: true,
+      titol: patch.titol || `Sessió ${activeGroup().sessions.length + 1}`
+    });
+  } else {
+    updateSession(id, patch);
+  }
   $("sessionDialog")?.close();
 }
 
@@ -648,7 +690,7 @@ function bindEvents() {
   $("btnSaveSessionDialog").addEventListener("click", saveSessionEditor);
   ["cursAcademic", "nomCentre", "docent", "diesNoLectiusGenerals"].forEach(id => { $(id).addEventListener("change", () => { data.cursAcademic = $("cursAcademic").value.trim() || guessAcademicYear(); data.configuracio.nomCentre = $("nomCentre").value.trim(); data.configuracio.docent = $("docent").value.trim(); data.configuracio.diesNoLectiusGenerals = $("diesNoLectiusGenerals").value.split("\n").map(x => x.trim()).filter(Boolean); data.grups.forEach(recalculateGroup); saveData("Configuració actualitzada"); }); });
   document.body.addEventListener("change", (e) => { const target = e.target; if (target.dataset.action === "edit-session") updateSession(target.dataset.id, { [target.dataset.field]: target.value || null }); if (target.dataset.action === "edit-session-list") updateSession(target.dataset.id, { [target.dataset.field]: stringToList(target.value) }); });
-  document.body.addEventListener("click", (e) => { const button = e.target.closest("button"); if (!button) return; if (button.dataset.action === "delete-session") deleteSession(button.dataset.id); if (button.dataset.action === "delete-incidence") deleteIncidence(button.dataset.id); if (button.dataset.action === "move-up") moveSession(button.dataset.id, -1); if (button.dataset.action === "move-down") moveSession(button.dataset.id, 1); if (button.dataset.action === "show-calendar-day") showCalendarDay(button.dataset.date); if (button.dataset.action === "edit-calendar-session") openSessionEditor(button.dataset.id); });
+  document.body.addEventListener("click", (e) => { const button = e.target.closest("button"); if (!button) return; if (button.dataset.action === "delete-session") deleteSession(button.dataset.id); if (button.dataset.action === "delete-incidence") deleteIncidence(button.dataset.id); if (button.dataset.action === "move-up") moveSession(button.dataset.id, -1); if (button.dataset.action === "move-down") moveSession(button.dataset.id, 1); if (button.dataset.action === "show-calendar-day") showCalendarDay(button.dataset.date); if (button.dataset.action === "add-calendar-session") openNewSessionEditor(button.dataset.date); if (button.dataset.action === "edit-calendar-session") openSessionEditor(button.dataset.id); });
   $("btnClearData").addEventListener("click", () => { if (!confirm("Aquesta acció eliminarà totes les planificacions desades en aquest navegador. Vols continuar?")) return; localStorage.removeItem(STORAGE_KEY); data = defaultData(); activeGroupId = null; render(); });
   $("btnClearCache").addEventListener("click", async () => { if (!("caches" in window)) return alert("Aquest navegador no informa de cap cache disponible."); const keys = await caches.keys(); await Promise.all(keys.map(key => caches.delete(key))); alert("Cache esborrada. Recarrega l'aplicació."); });
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installPrompt = e; $("btnInstall").classList.remove("hidden"); });

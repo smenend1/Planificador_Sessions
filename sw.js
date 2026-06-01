@@ -1,4 +1,4 @@
-const CACHE_NAME = "planificador-docent-sessions-v0.3.2";
+const CACHE_NAME = "planificador-docent-sessions-v0.4.0";
 const ASSETS = [
   "./",
   "./index.html",

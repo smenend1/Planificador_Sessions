@@ -331,3 +331,75 @@ dialog { border: 0; border-radius: 18px; box-shadow: var(--shadow); width: min(9
 .calendar-event {
   cursor: pointer;
 }
+
+/* Millores v0.4: vista setmanal i exportacions */
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: .65rem;
+  margin-top: .75rem;
+}
+.week-day {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: .75rem;
+  background: #fff;
+  min-height: 190px;
+  display: flex;
+  flex-direction: column;
+  gap: .45rem;
+}
+.week-day.class-day { background: #fafffb; }
+.week-day.blocked { background: #fff8f2; }
+.week-day header {
+  display: grid;
+  gap: .15rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: .4rem;
+  text-transform: capitalize;
+}
+.week-day header span { color: var(--muted); font-size: .88rem; }
+.week-event {
+  border-radius: 12px;
+  border-left: 5px solid var(--primary-soft);
+  padding: .45rem .55rem;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: none;
+  text-align: left;
+  display: grid;
+  gap: .15rem;
+}
+.week-event span { color: var(--muted); font-size: .78rem; }
+.week-inc {
+  border-radius: 12px;
+  padding: .45rem .55rem;
+  background: #fff1e8;
+  color: #714b2e;
+  font-weight: 700;
+}
+.checkbox-label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: .55rem;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: .75rem;
+}
+.checkbox-label input { width: auto; }
+.print-calendar {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: .75rem;
+}
+.print-calendar th, .print-calendar td {
+  border: 1px solid var(--border);
+  padding: .55rem;
+  vertical-align: top;
+  text-align: left;
+}
+@media (max-width: 980px) {
+  .week-grid { grid-template-columns: 1fr; }
+  .week-day { min-height: auto; }
+}

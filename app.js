@@ -1,6 +1,6 @@
-const STORAGE_KEY = "planificadorDocentSessions.v032";
-const OLD_STORAGE_KEYS = ["planificadorDocentSessions.v031", "planificadorDocentSessions.v030", "planificadorDocentSessions.v020", "planificadorDocentSessions.v010"];
-const APP_VERSION = "0.3.2";
+const STORAGE_KEY = "planificadorDocentSessions.v040";
+const OLD_STORAGE_KEYS = ["planificadorDocentSessions.v032", "planificadorDocentSessions.v031", "planificadorDocentSessions.v030", "planificadorDocentSessions.v020", "planificadorDocentSessions.v010"];
+const APP_VERSION = "0.4.0";
 const WEEKDAYS = ["diumenge", "dilluns", "dimarts", "dimecres", "dijous", "divendres", "dissabte"];
 const CLASS_DAYS = ["dilluns", "dimarts", "dimecres", "dijous", "divendres"];
 const STATES = ["prevista", "feta", "parcial", "ajornada", "cancel·lada", "substituïda"];
@@ -9,6 +9,7 @@ let installPrompt = null;
 let currentFilter = "totes";
 let timelineMode = "sessions";
 let calendarCursor = new Date();
+let weekCursor = new Date();
 
 let data = loadData();
 let activeGroupId = data.grups[0]?.id || null;
@@ -338,7 +339,7 @@ function formatDate(value) { if (!value) return "Sense data"; const date = parse
 function escapeHtml(text) { return String(text || "").replace(/[&<>'"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c])); }
 
 function render() {
-  renderGeneralConfig(); renderGroups(); renderGroupEditor(); renderAlerts(); renderSessions(); renderCalendar(); renderTimeline(); renderIncidences(); renderStats(); renderGlobalStats(); renderDiagnostics();
+  renderGeneralConfig(); renderGroups(); renderGroupEditor(); renderAlerts(); renderSessions(); renderCalendar(); renderWeekly(); renderTimeline(); renderIncidences(); renderStats(); renderGlobalStats(); renderDiagnostics();
 }
 
 function renderGeneralConfig() {
@@ -496,6 +497,56 @@ function setCalendarToToday() {
   renderCalendar();
 }
 
+function startOfWeek(date) {
+  const d = new Date(date);
+  const day = d.getDay() || 7;
+  d.setDate(d.getDate() - day + 1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function addDays(date, amount) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + amount);
+  return d;
+}
+
+function renderWeekly() {
+  const group = activeGroup();
+  const title = $("weekTitle");
+  const grid = $("weekGrid");
+  if (!title || !grid) return;
+  if (!group) { grid.innerHTML = `<p>Crea un grup per veure la vista setmanal.</p>`; return; }
+  const start = startOfWeek(weekCursor || new Date());
+  const end = addDays(start, 4);
+  title.textContent = `${formatDate(toISODate(start))} - ${formatDate(toISODate(end))}`;
+  const generalBlocked = new Set(data.configuracio.diesNoLectiusGenerals || []);
+  const html = CLASS_DAYS.map((_, i) => {
+    const d = addDays(start, i);
+    const iso = toISODate(d);
+    const weekday = WEEKDAYS[d.getDay()];
+    const sessions = group.sessions.filter(s => s.dataPrevista === iso);
+    const incs = group.incidencies.filter(x => x.data === iso);
+    const isClassDay = group.diesSetmana.includes(weekday);
+    const blocked = incs.length || generalBlocked.has(iso);
+    const sessionHtml = sessions.length ? sessions.map(s => `<button class="week-event estat-${s.estat}" type="button" data-action="edit-calendar-session" data-id="${s.id}"><strong>S${s.num}</strong> ${escapeHtml(s.titol || "Sense títol")}<span>${escapeHtml(s.estat)}</span></button>`).join("") : `<p class="hint">Cap sessió.</p>`;
+    const incHtml = incs.length ? `<p class="week-inc">${incs.map(i => escapeHtml(i.motiu || i.tipus)).join(", ")}</p>` : "";
+    const generalHtml = generalBlocked.has(iso) ? `<p class="week-inc">Dia no lectiu general</p>` : "";
+    return `<article class="week-day ${isClassDay ? "class-day" : ""} ${blocked ? "blocked" : ""}"><header><strong>${d.toLocaleDateString("ca-ES", { weekday: "long" })}</strong><span>${formatDate(iso)}</span></header>${incHtml}${generalHtml}${sessionHtml}<button class="secondary small-button" type="button" data-action="add-calendar-session" data-date="${iso}">Afegeix sessió</button></article>`;
+  }).join("");
+  grid.innerHTML = html;
+}
+
+function changeWeek(delta) {
+  weekCursor = addDays(startOfWeek(weekCursor || new Date()), delta * 7);
+  renderWeekly();
+}
+
+function setWeekToToday() {
+  weekCursor = new Date();
+  renderWeekly();
+}
+
 function showCalendarDay(iso) {
   const group = activeGroup();
   const details = $("calendarDetails");
@@ -522,6 +573,8 @@ function openNewSessionEditor(iso) {
   $("sessionEditObjectiu").value = "";
   $("sessionEditActivitats").value = "";
   $("sessionEditRecursos").value = "";
+  $("sessionEditDataPrevista").value = iso;
+  $("sessionEditFixada").checked = true;
   $("sessionEditEstat").innerHTML = STATES.map(state => `<option value="${state}" ${state === "prevista" ? "selected" : ""}>${state}</option>`).join("");
   $("sessionEditDataReal").value = "";
   $("sessionEditObservacions").value = "";
@@ -542,6 +595,8 @@ function openSessionEditor(id) {
   $("sessionEditObjectiu").value = session.objectiu || "";
   $("sessionEditActivitats").value = listToText(session.activitats);
   $("sessionEditRecursos").value = listToText(session.recursos);
+  $("sessionEditDataPrevista").value = session.dataPrevista || "";
+  $("sessionEditFixada").checked = Boolean(session.dataFixadaManualment);
   $("sessionEditEstat").innerHTML = STATES.map(state => `<option value="${state}" ${state === session.estat ? "selected" : ""}>${state}</option>`).join("");
   $("sessionEditDataReal").value = session.dataReal || "";
   $("sessionEditObservacions").value = session.observacions || "";
@@ -559,6 +614,8 @@ function saveSessionEditor() {
     objectiu: $("sessionEditObjectiu").value.trim(),
     activitats: stringToList($("sessionEditActivitats").value),
     recursos: stringToList($("sessionEditRecursos").value),
+    dataPrevista: $("sessionEditDataPrevista").value,
+    dataFixadaManualment: $("sessionEditFixada").checked,
     estat: $("sessionEditEstat").value,
     dataReal: $("sessionEditDataReal").value || null,
     observacions: $("sessionEditObservacions").value.trim()
@@ -567,12 +624,16 @@ function saveSessionEditor() {
     const iso = id.replace("NEW::", "");
     addSession({
       ...patch,
-      dataPrevista: iso,
-      dataOriginal: iso,
+      dataPrevista: patch.dataPrevista || iso,
+      dataOriginal: patch.dataPrevista || iso,
       dataFixadaManualment: true,
       titol: patch.titol || `Sessió ${activeGroup().sessions.length + 1}`
     });
   } else {
+    const group = activeGroup();
+    const current = group?.sessions.find(s => s.id === id);
+    if (patch.dataFixadaManualment && patch.dataPrevista && current && !current.dataOriginal) patch.dataOriginal = patch.dataPrevista;
+    if (patch.dataPrevista && current && patch.dataPrevista !== current.dataPrevista && patch.dataFixadaManualment) patch.dataOriginal = current.dataOriginal || patch.dataPrevista;
     updateSession(id, patch);
   }
   $("sessionDialog")?.close();
@@ -633,7 +694,7 @@ function renderGlobalStats() {
 async function cacheCount() { if (!("caches" in window)) return "No disponible"; const keys = await caches.keys(); return keys.length; }
 function renderDiagnostics() {
   const localOk = testLocalStorage(); const swOk = "serviceWorker" in navigator; const online = navigator.onLine;
-  $("diagnostics").innerHTML = `<div class="diag-box"><strong>${swOk ? "Sí" : "No"}</strong><span>Service worker disponible</span></div><div class="diag-box"><strong>${online ? "Online" : "Offline"}</strong><span>Connexió actual</span></div><div class="diag-box"><strong>${localOk ? "Sí" : "No"}</strong><span>localStorage</span></div><div class="diag-box"><strong>${localStorage.getItem(STORAGE_KEY) ? "Sí" : "No"}</strong><span>Dades locals v0.3.1</span></div><div class="diag-box"><strong>${APP_VERSION}</strong><span>Versió</span></div><div class="diag-box"><strong>${data.app.dataModificacio || "-"}</strong><span>Últim canvi</span></div>`;
+  $("diagnostics").innerHTML = `<div class="diag-box"><strong>${swOk ? "Sí" : "No"}</strong><span>Service worker disponible</span></div><div class="diag-box"><strong>${online ? "Online" : "Offline"}</strong><span>Connexió actual</span></div><div class="diag-box"><strong>${localOk ? "Sí" : "No"}</strong><span>localStorage</span></div><div class="diag-box"><strong>${localStorage.getItem(STORAGE_KEY) ? "Sí" : "No"}</strong><span>Dades locals v0.4.0</span></div><div class="diag-box"><strong>${APP_VERSION}</strong><span>Versió</span></div><div class="diag-box"><strong>${data.app.dataModificacio || "-"}</strong><span>Últim canvi</span></div>`;
   cacheCount().then(n => { const el = $("cacheCount"); if (el) el.textContent = n; });
 }
 function testLocalStorage() { try { localStorage.setItem("__test", "1"); localStorage.removeItem("__test"); return true; } catch { return false; } }
@@ -664,6 +725,53 @@ function buildSummaryHtml(group) {
 }
 function printSummary() { const html = buildSummaryHtml(activeGroup()); $("printArea").innerHTML = html; $("printArea").classList.remove("hidden"); window.print(); }
 
+function csvEscape(value) {
+  const text = String(value ?? "");
+  return /[",;\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function exportGroupCsv() {
+  const group = activeGroup();
+  if (!group) return;
+  const headers = ["num", "dataPrevista", "dataOriginal", "dataReal", "estat", "titol", "bloc", "queEsTreballa", "objectiu", "activitats", "recursos", "observacions", "reprogramada", "dataFixadaManualment"];
+  const rows = group.sessions.map(s => [s.num, s.dataPrevista, s.dataOriginal, s.dataReal || "", s.estat, s.titol, s.bloc, s.queEsTreballa, s.objectiu, listToText(s.activitats), listToText(s.recursos), s.observacions, s.reprogramada ? "sí" : "no", s.dataFixadaManualment ? "sí" : "no"]);
+  const csv = [headers, ...rows].map(row => row.map(csvEscape).join(";")).join("\n");
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${slug(`${group.nivell}-${group.grup}-${group.assignatura}`)}-sessions.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function buildCalendarPrintHtml(group) {
+  if (!group) return "";
+  const year = calendarCursor.getFullYear();
+  const month = calendarCursor.getMonth();
+  const first = new Date(year, month, 1);
+  const last = new Date(year, month + 1, 0);
+  const sessions = group.sessions.filter(s => s.dataPrevista && parseDate(s.dataPrevista)?.getMonth() === month && parseDate(s.dataPrevista)?.getFullYear() === year);
+  const incidencies = group.incidencies.filter(i => i.data && parseDate(i.data)?.getMonth() === month && parseDate(i.data)?.getFullYear() === year);
+  const byDay = {};
+  sessions.forEach(s => { (byDay[s.dataPrevista] ||= []).push(`Sessió ${s.num}: ${escapeHtml(s.titol || "Sense títol")} · ${escapeHtml(s.estat)}`); });
+  incidencies.forEach(i => { (byDay[i.data] ||= []).push(`Incidència: ${escapeHtml(i.motiu || i.tipus)}`); });
+  let html = `<h2>Calendari mensual</h2><p><strong>${escapeHtml(group.nivell)} ${escapeHtml(group.grup)} · ${escapeHtml(group.assignatura)}</strong></p><p>${first.toLocaleDateString("ca-ES", { month: "long", year: "numeric" })}</p><table class="print-calendar"><thead><tr><th>Data</th><th>Sessions i incidències</th></tr></thead><tbody>`;
+  for (let d = new Date(first); d <= last; d.setDate(d.getDate() + 1)) {
+    const iso = toISODate(d);
+    if (byDay[iso]?.length) html += `<tr><td>${formatDate(iso)}</td><td>${byDay[iso].join("<br>")}</td></tr>`;
+  }
+  html += `</tbody></table>`;
+  if (!sessions.length && !incidencies.length) html += `<p>No hi ha sessions ni incidències en aquest mes.</p>`;
+  return html;
+}
+
+function printCalendar() {
+  const html = buildCalendarPrintHtml(activeGroup());
+  $("printArea").innerHTML = html;
+  $("printArea").classList.remove("hidden");
+  window.print();
+}
+
 function bindEvents() {
   $("btnSave").addEventListener("click", () => saveData("Desat manualment"));
   $("btnNewGroup").addEventListener("click", createGroup);
@@ -674,9 +782,11 @@ function bindEvents() {
   $("btnDeleteGroup").addEventListener("click", deleteGroup);
   $("btnAddSession").addEventListener("click", () => addSession());
   $("btnAddIncidence").addEventListener("click", addIncidence);
-  $("btnExportAll").addEventListener("click", () => exportJson(data, `planificador-docent-${data.cursAcademic}-v031.json`));
+  $("btnExportAll").addEventListener("click", () => exportJson(data, `planificador-docent-${data.cursAcademic}-v040.json`));
   $("btnExportGroup").addEventListener("click", () => { const g = activeGroup(); if (g) exportJson(g, `${slug(`${g.nivell}-${g.grup}-${g.assignatura}`)}.json`); });
+  $("btnExportCsv").addEventListener("click", exportGroupCsv);
   $("btnPrintSummary").addEventListener("click", printSummary);
+  $("btnPrintCalendar").addEventListener("click", printCalendar);
   $("btnDiagnostics").addEventListener("click", renderDiagnostics);
   $("groupSelector").addEventListener("change", (e) => { activeGroupId = e.target.value; render(); });
   $("sessionFilter").addEventListener("change", (e) => { currentFilter = e.target.value; renderSessions(); });
@@ -684,6 +794,9 @@ function bindEvents() {
   $("btnPrevMonth").addEventListener("click", () => changeCalendarMonth(-1));
   $("btnNextMonth").addEventListener("click", () => changeCalendarMonth(1));
   $("btnTodayMonth").addEventListener("click", setCalendarToToday);
+  $("btnPrevWeek").addEventListener("click", () => changeWeek(-1));
+  $("btnNextWeek").addEventListener("click", () => changeWeek(1));
+  $("btnTodayWeek").addEventListener("click", setWeekToToday);
   $("importFile").addEventListener("change", (e) => e.target.files[0] && importJson(e.target.files[0]));
   $("btnBulkSessions").addEventListener("click", () => $("bulkDialog").showModal());
   $("btnConfirmBulk").addEventListener("click", () => { const lines = $("bulkText").value.split("\n").map(x => x.trim()).filter(Boolean); lines.forEach(line => { const [titol, queEsTreballa, objectiu, bloc] = line.split(";").map(x => x?.trim() || ""); addSession({ titol, queEsTreballa, objectiu, bloc }); }); $("bulkText").value = ""; $("bulkDialog").close(); saveData("Sessions creades"); });

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#5f8f73">
-  <meta name="description" content="PWA per planificar sessions de classe, fer seguiment i reprogramar automàticament incidències. Versió 0.2.">
+  <meta name="description" content="PWA per planificar sessions de classe, fer seguiment i reprogramar automàticament incidències. Versió 0.3.">
   <title>Planificador docent · Sessions i seguiment de curs</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
@@ -134,9 +134,23 @@
       <div id="sessionsList" class="list"></div>
     </section>
 
+
     <section class="card full-width">
       <div class="section-title-row">
-        <h2>6. Línia temporal</h2>
+        <h2>6. Calendari mensual</h2>
+        <div class="button-row wrap">
+          <button id="btnPrevMonth" class="secondary" type="button">Mes anterior</button>
+          <button id="btnTodayMonth" class="secondary" type="button">Avui</button>
+          <button id="btnNextMonth" class="secondary" type="button">Mes següent</button>
+        </div>
+      </div>
+      <h3 id="calendarTitle" class="calendar-title">Calendari</h3>
+      <div id="calendarGrid" class="calendar-grid"></div>
+      <div id="calendarDetails" class="calendar-details"></div>
+    </section>
+    <section class="card full-width">
+      <div class="section-title-row">
+        <h2>7. Línia temporal</h2>
         <label class="inline-control">Mostra
           <select id="timelineMode">
             <option value="sessions">Sessions</option>
@@ -148,7 +162,7 @@
     </section>
 
     <section class="card">
-      <h2>7. Incidències</h2>
+      <h2>8. Incidències</h2>
       <div class="grid two">
         <label>Data
           <input id="incData" type="date">
@@ -184,12 +198,12 @@
     </section>
 
     <section class="card">
-      <h2>8. Estadístiques</h2>
+      <h2>9. Estadístiques</h2>
       <div id="statsPanel" class="stats-grid"></div>
     </section>
 
     <section class="card full-width">
-      <h2>9. Exportació, importació i resum</h2>
+      <h2>10. Exportació, importació i resum</h2>
       <div class="button-row wrap">
         <button id="btnExportAll" type="button">Exporta tot JSON</button>
         <button id="btnExportGroup" class="secondary" type="button">Exporta grup JSON</button>
@@ -203,7 +217,7 @@
 
     <section class="card full-width">
       <div class="section-title-row">
-        <h2>10. Diagnòstic PWA</h2>
+        <h2>11. Diagnòstic PWA</h2>
         <button id="btnDiagnostics" class="secondary" type="button">Comprova diagnòstic</button>
       </div>
       <div id="diagnostics" class="diagnostics"></div>

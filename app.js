@@ -1,6 +1,6 @@
-const STORAGE_KEY = "planificadorDocentSessions.v020";
-const OLD_STORAGE_KEYS = ["planificadorDocentSessions.v010"];
-const APP_VERSION = "0.2.0";
+const STORAGE_KEY = "planificadorDocentSessions.v030";
+const OLD_STORAGE_KEYS = ["planificadorDocentSessions.v020", "planificadorDocentSessions.v010"];
+const APP_VERSION = "0.3.0";
 const WEEKDAYS = ["diumenge", "dilluns", "dimarts", "dimecres", "dijous", "divendres", "dissabte"];
 const CLASS_DAYS = ["dilluns", "dimarts", "dimecres", "dijous", "divendres"];
 const STATES = ["prevista", "feta", "parcial", "ajornada", "cancel·lada", "substituïda"];
@@ -8,6 +8,7 @@ const INCIDENCE_TYPES = ["vaga", "falta_docent", "sortida", "festa", "activitat_
 let installPrompt = null;
 let currentFilter = "totes";
 let timelineMode = "sessions";
+let calendarCursor = new Date();
 
 let data = loadData();
 let activeGroupId = data.grups[0]?.id || null;
@@ -328,7 +329,7 @@ function formatDate(value) { if (!value) return "Sense data"; const date = parse
 function escapeHtml(text) { return String(text || "").replace(/[&<>'"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c])); }
 
 function render() {
-  renderGeneralConfig(); renderGroups(); renderGroupEditor(); renderAlerts(); renderSessions(); renderTimeline(); renderIncidences(); renderStats(); renderGlobalStats(); renderDiagnostics();
+  renderGeneralConfig(); renderGroups(); renderGroupEditor(); renderAlerts(); renderSessions(); renderCalendar(); renderTimeline(); renderIncidences(); renderStats(); renderGlobalStats(); renderDiagnostics();
 }
 
 function renderGeneralConfig() {
@@ -417,6 +418,88 @@ function renderSessions() {
     </article>`).join("");
 }
 
+
+function renderCalendar() {
+  const group = activeGroup();
+  const grid = $("calendarGrid");
+  const title = $("calendarTitle");
+  const details = $("calendarDetails");
+  if (!grid || !title || !details) return;
+  if (!group) {
+    title.textContent = "Calendari";
+    grid.innerHTML = `<p>Crea un grup per veure el calendari mensual.</p>`;
+    details.innerHTML = "";
+    return;
+  }
+  if (!calendarCursor || Number.isNaN(calendarCursor.getTime())) calendarCursor = group.dataInici ? parseDate(group.dataInici) : new Date();
+  const year = calendarCursor.getFullYear();
+  const month = calendarCursor.getMonth();
+  title.textContent = calendarCursor.toLocaleDateString("ca-ES", { month: "long", year: "numeric" });
+  const first = new Date(year, month, 1);
+  const last = new Date(year, month + 1, 0);
+  const mondayOffset = (first.getDay() + 6) % 7;
+  const start = new Date(first);
+  start.setDate(first.getDate() - mondayOffset);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 41);
+  const sessionsByDate = group.sessions.reduce((map, session) => {
+    if (!session.dataPrevista) return map;
+    (map[session.dataPrevista] ||= []).push(session);
+    return map;
+  }, {});
+  const incidencesByDate = group.incidencies.reduce((map, inc) => {
+    if (!inc.data) return map;
+    (map[inc.data] ||= []).push(inc);
+    return map;
+  }, {});
+  const generalBlocked = new Set(data.configuracio.diesNoLectiusGenerals || []);
+  const today = todayISO();
+  const weekdayNames = ["Dl", "Dt", "Dc", "Dj", "Dv", "Ds", "Dg"];
+  const cells = weekdayNames.map(day => `<div class="calendar-weekday">${day}</div>`);
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const iso = toISODate(d);
+    const inMonth = d.getMonth() === month;
+    const sessions = sessionsByDate[iso] || [];
+    const incs = incidencesByDate[iso] || [];
+    const weekday = WEEKDAYS[d.getDay()];
+    const isClassDay = group.diesSetmana.includes(weekday);
+    const isGeneralBlocked = generalBlocked.has(iso);
+    const classes = ["calendar-day", inMonth ? "" : "muted-month", isClassDay ? "class-day" : "", iso === today ? "today" : "", (incs.length || isGeneralBlocked) ? "blocked" : ""].filter(Boolean).join(" ");
+    const sessionHtml = sessions.slice(0, 3).map(s => `<button class="calendar-event estat-${s.estat}" type="button" data-action="show-calendar-day" data-date="${iso}">S${s.num} · ${escapeHtml(s.titol || s.estat)}</button>`).join("");
+    const more = sessions.length > 3 ? `<button class="calendar-more" type="button" data-action="show-calendar-day" data-date="${iso}">+${sessions.length - 3} més</button>` : "";
+    const incHtml = incs.length ? `<button class="calendar-inc" type="button" data-action="show-calendar-day" data-date="${iso}">Incidència</button>` : "";
+    const generalHtml = isGeneralBlocked ? `<button class="calendar-inc" type="button" data-action="show-calendar-day" data-date="${iso}">No lectiu</button>` : "";
+    cells.push(`<div class="${classes}" data-date="${iso}"><button class="calendar-date" type="button" data-action="show-calendar-day" data-date="${iso}">${d.getDate()}</button>${sessionHtml}${more}${incHtml}${generalHtml}</div>`);
+  }
+  grid.innerHTML = cells.join("");
+  const monthSessions = group.sessions.filter(s => s.dataPrevista && parseDate(s.dataPrevista)?.getMonth() === month && parseDate(s.dataPrevista)?.getFullYear() === year);
+  const monthInc = group.incidencies.filter(i => i.data && parseDate(i.data)?.getMonth() === month && parseDate(i.data)?.getFullYear() === year);
+  details.innerHTML = `<div class="calendar-summary"><span class="pill">Sessions del mes: ${monthSessions.length}</span><span class="pill">Incidències: ${monthInc.length}</span><span class="pill">Dies de classe: ${group.diesSetmana.join(", ") || "cap"}</span></div>`;
+}
+
+function changeCalendarMonth(delta) {
+  calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + delta, 1);
+  renderCalendar();
+}
+
+function setCalendarToToday() {
+  calendarCursor = new Date();
+  renderCalendar();
+}
+
+function showCalendarDay(iso) {
+  const group = activeGroup();
+  const details = $("calendarDetails");
+  if (!group || !details) return;
+  const sessions = group.sessions.filter(s => s.dataPrevista === iso);
+  const incidencies = group.incidencies.filter(i => i.data === iso);
+  const general = (data.configuracio.diesNoLectiusGenerals || []).includes(iso);
+  const weekday = WEEKDAYS[parseDate(iso).getDay()];
+  const sessionHtml = sessions.length ? sessions.map(s => `<li><strong>Sessió ${s.num}: ${escapeHtml(s.titol || "Sense títol")}</strong> · ${escapeHtml(s.estat)}${s.queEsTreballa ? `<br><span>${escapeHtml(s.queEsTreballa)}</span>` : ""}</li>`).join("") : `<li>No hi ha sessions previstes.</li>`;
+  const incHtml = incidencies.length ? incidencies.map(i => `<li>${escapeHtml(i.motiu || i.tipus)} · ${escapeHtml(i.accio)}</li>`).join("") : "";
+  details.innerHTML = `<div class="calendar-day-detail"><h3>${formatDate(iso)}</h3><p>${group.diesSetmana.includes(weekday) ? "Dia de classe configurat" : "No és un dia de classe configurat"}${general ? " · dia no lectiu general" : ""}</p><h4>Sessions</h4><ul>${sessionHtml}</ul>${incidencies.length || general ? `<h4>Incidències o bloquejos</h4><ul>${incHtml}${general ? "<li>Dia no lectiu general</li>" : ""}</ul>` : ""}</div>`;
+}
+
 function renderTimeline() {
   const group = activeGroup(); const box = $("timelineList");
   if (!box) return;
@@ -472,7 +555,7 @@ function renderGlobalStats() {
 async function cacheCount() { if (!("caches" in window)) return "No disponible"; const keys = await caches.keys(); return keys.length; }
 function renderDiagnostics() {
   const localOk = testLocalStorage(); const swOk = "serviceWorker" in navigator; const online = navigator.onLine;
-  $("diagnostics").innerHTML = `<div class="diag-box"><strong>${swOk ? "Sí" : "No"}</strong><span>Service worker disponible</span></div><div class="diag-box"><strong>${online ? "Online" : "Offline"}</strong><span>Connexió actual</span></div><div class="diag-box"><strong>${localOk ? "Sí" : "No"}</strong><span>localStorage</span></div><div class="diag-box"><strong>${localStorage.getItem(STORAGE_KEY) ? "Sí" : "No"}</strong><span>Dades locals v0.2</span></div><div class="diag-box"><strong>${APP_VERSION}</strong><span>Versió</span></div><div class="diag-box"><strong>${data.app.dataModificacio || "-"}</strong><span>Últim canvi</span></div>`;
+  $("diagnostics").innerHTML = `<div class="diag-box"><strong>${swOk ? "Sí" : "No"}</strong><span>Service worker disponible</span></div><div class="diag-box"><strong>${online ? "Online" : "Offline"}</strong><span>Connexió actual</span></div><div class="diag-box"><strong>${localOk ? "Sí" : "No"}</strong><span>localStorage</span></div><div class="diag-box"><strong>${localStorage.getItem(STORAGE_KEY) ? "Sí" : "No"}</strong><span>Dades locals v0.3</span></div><div class="diag-box"><strong>${APP_VERSION}</strong><span>Versió</span></div><div class="diag-box"><strong>${data.app.dataModificacio || "-"}</strong><span>Últim canvi</span></div>`;
   cacheCount().then(n => { const el = $("cacheCount"); if (el) el.textContent = n; });
 }
 function testLocalStorage() { try { localStorage.setItem("__test", "1"); localStorage.removeItem("__test"); return true; } catch { return false; } }
@@ -513,19 +596,22 @@ function bindEvents() {
   $("btnDeleteGroup").addEventListener("click", deleteGroup);
   $("btnAddSession").addEventListener("click", () => addSession());
   $("btnAddIncidence").addEventListener("click", addIncidence);
-  $("btnExportAll").addEventListener("click", () => exportJson(data, `planificador-docent-${data.cursAcademic}-v020.json`));
+  $("btnExportAll").addEventListener("click", () => exportJson(data, `planificador-docent-${data.cursAcademic}-v030.json`));
   $("btnExportGroup").addEventListener("click", () => { const g = activeGroup(); if (g) exportJson(g, `${slug(`${g.nivell}-${g.grup}-${g.assignatura}`)}.json`); });
   $("btnPrintSummary").addEventListener("click", printSummary);
   $("btnDiagnostics").addEventListener("click", renderDiagnostics);
   $("groupSelector").addEventListener("change", (e) => { activeGroupId = e.target.value; render(); });
   $("sessionFilter").addEventListener("change", (e) => { currentFilter = e.target.value; renderSessions(); });
   $("timelineMode").addEventListener("change", (e) => { timelineMode = e.target.value; renderTimeline(); });
+  $("btnPrevMonth").addEventListener("click", () => changeCalendarMonth(-1));
+  $("btnNextMonth").addEventListener("click", () => changeCalendarMonth(1));
+  $("btnTodayMonth").addEventListener("click", setCalendarToToday);
   $("importFile").addEventListener("change", (e) => e.target.files[0] && importJson(e.target.files[0]));
   $("btnBulkSessions").addEventListener("click", () => $("bulkDialog").showModal());
   $("btnConfirmBulk").addEventListener("click", () => { const lines = $("bulkText").value.split("\n").map(x => x.trim()).filter(Boolean); lines.forEach(line => { const [titol, queEsTreballa, objectiu, bloc] = line.split(";").map(x => x?.trim() || ""); addSession({ titol, queEsTreballa, objectiu, bloc }); }); $("bulkText").value = ""; $("bulkDialog").close(); saveData("Sessions creades"); });
   ["cursAcademic", "nomCentre", "docent", "diesNoLectiusGenerals"].forEach(id => { $(id).addEventListener("change", () => { data.cursAcademic = $("cursAcademic").value.trim() || guessAcademicYear(); data.configuracio.nomCentre = $("nomCentre").value.trim(); data.configuracio.docent = $("docent").value.trim(); data.configuracio.diesNoLectiusGenerals = $("diesNoLectiusGenerals").value.split("\n").map(x => x.trim()).filter(Boolean); data.grups.forEach(recalculateGroup); saveData("Configuració actualitzada"); }); });
   document.body.addEventListener("change", (e) => { const target = e.target; if (target.dataset.action === "edit-session") updateSession(target.dataset.id, { [target.dataset.field]: target.value || null }); if (target.dataset.action === "edit-session-list") updateSession(target.dataset.id, { [target.dataset.field]: stringToList(target.value) }); });
-  document.body.addEventListener("click", (e) => { const button = e.target.closest("button"); if (!button) return; if (button.dataset.action === "delete-session") deleteSession(button.dataset.id); if (button.dataset.action === "delete-incidence") deleteIncidence(button.dataset.id); if (button.dataset.action === "move-up") moveSession(button.dataset.id, -1); if (button.dataset.action === "move-down") moveSession(button.dataset.id, 1); });
+  document.body.addEventListener("click", (e) => { const button = e.target.closest("button"); if (!button) return; if (button.dataset.action === "delete-session") deleteSession(button.dataset.id); if (button.dataset.action === "delete-incidence") deleteIncidence(button.dataset.id); if (button.dataset.action === "move-up") moveSession(button.dataset.id, -1); if (button.dataset.action === "move-down") moveSession(button.dataset.id, 1); if (button.dataset.action === "show-calendar-day") showCalendarDay(button.dataset.date); });
   $("btnClearData").addEventListener("click", () => { if (!confirm("Aquesta acció eliminarà totes les planificacions desades en aquest navegador. Vols continuar?")) return; localStorage.removeItem(STORAGE_KEY); data = defaultData(); activeGroupId = null; render(); });
   $("btnClearCache").addEventListener("click", async () => { if (!("caches" in window)) return alert("Aquest navegador no informa de cap cache disponible."); const keys = await caches.keys(); await Promise.all(keys.map(key => caches.delete(key))); alert("Cache esborrada. Recarrega l'aplicació."); });
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installPrompt = e; $("btnInstall").classList.remove("hidden"); });

@@ -218,3 +218,99 @@ dialog { border: 0; border-radius: 18px; box-shadow: var(--shadow); width: min(9
   .mini-actions { justify-content: stretch; }
   .mini-actions button { flex: 1; }
 }
+
+
+/* Millores v0.3: calendari mensual */
+.calendar-title {
+  text-transform: capitalize;
+  margin-top: .35rem;
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: .45rem;
+  margin-top: .75rem;
+}
+.calendar-weekday {
+  font-weight: 900;
+  text-align: center;
+  color: var(--primary-dark);
+  padding: .35rem;
+}
+.calendar-day {
+  min-height: 112px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+  padding: .35rem;
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+}
+.calendar-day.muted-month { opacity: .48; }
+.calendar-day.class-day { background: #fbfffc; box-shadow: inset 0 0 0 2px #edf7ef; }
+.calendar-day.today { outline: 3px solid var(--primary-soft); }
+.calendar-day.blocked { background: #fffaf0; }
+.calendar-date {
+  align-self: flex-start;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  padding: .1rem .25rem;
+  font-weight: 900;
+  min-height: auto;
+}
+.calendar-event, .calendar-inc, .calendar-more {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--primary);
+  background: #fff;
+  color: var(--ink);
+  padding: .28rem .38rem;
+  min-height: auto;
+  border-radius: 9px;
+  font-size: .78rem;
+  text-align: left;
+  box-shadow: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.calendar-event.estat-feta { border-left-color: #4b8f5b; }
+.calendar-event.estat-parcial { border-left-color: #d9a934; }
+.calendar-event.estat-ajornada { border-left-color: #e28a42; }
+.calendar-event.estat-cancel·lada { border-left-color: #c55a5a; }
+.calendar-event.estat-substituïda { border-left-color: #5c82c7; }
+.calendar-inc { border-left-color: #b65353; background: #fff6f1; }
+.calendar-more { border-left-color: #637066; background: #f6f8f6; }
+.calendar-details {
+  margin-top: .85rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: .8rem;
+  background: #fafffb;
+}
+.calendar-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+}
+.calendar-day-detail ul { margin-top: .25rem; }
+.calendar-day-detail li { margin-bottom: .35rem; }
+
+@media (max-width: 760px) {
+  .calendar-grid { gap: .25rem; }
+  .calendar-weekday { font-size: .78rem; padding: .2rem; }
+  .calendar-day { min-height: 84px; border-radius: 10px; padding: .25rem; }
+  .calendar-event, .calendar-inc, .calendar-more { font-size: .68rem; padding: .2rem .25rem; }
+}
+
+@media (max-width: 520px) {
+  .calendar-grid { display: block; }
+  .calendar-weekday { display: none; }
+  .calendar-day {
+    min-height: auto;
+    margin-bottom: .45rem;
+  }
+  .calendar-day.muted-month { display: none; }
+}

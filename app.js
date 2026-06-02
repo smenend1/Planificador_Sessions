@@ -1,10 +1,19 @@
-const STORAGE_KEY = "planificadorDocentSessions.v041";
-const OLD_STORAGE_KEYS = ["planificadorDocentSessions.v040", "planificadorDocentSessions.v032", "planificadorDocentSessions.v031", "planificadorDocentSessions.v030", "planificadorDocentSessions.v020", "planificadorDocentSessions.v010"];
-const APP_VERSION = "0.4.1";
+const STORAGE_KEY = "planificadorDocentSessions.v050";
+const OLD_STORAGE_KEYS = ["planificadorDocentSessions.v041", "planificadorDocentSessions.v040", "planificadorDocentSessions.v032", "planificadorDocentSessions.v031", "planificadorDocentSessions.v030", "planificadorDocentSessions.v020", "planificadorDocentSessions.v010"];
+const APP_VERSION = "0.5.0";
 const WEEKDAYS = ["diumenge", "dilluns", "dimarts", "dimecres", "dijous", "divendres", "dissabte"];
 const CLASS_DAYS = ["dilluns", "dimarts", "dimecres", "dijous", "divendres"];
 const STATES = ["prevista", "feta", "parcial", "ajornada", "cancel·lada", "substituïda"];
 const INCIDENCE_TYPES = ["vaga", "falta_docent", "sortida", "festa", "activitat_centre", "avaluacio", "altres"];
+
+const LOMLOE_SUBJECTS = {
+  "1r ESO": ["Biologia i Geologia", "Educació Física", "Educació Plàstica, Visual i Audiovisual", "Geografia i Història", "Llengua Catalana i Literatura", "Llengua Castellana i Literatura", "Llengua Estrangera", "Matemàtiques", "Música", "Tecnologia i Digitalització", "Religió / Atenció educativa", "Matèria personalitzada"],
+  "2n ESO": ["Educació Física", "Educació Plàstica, Visual i Audiovisual", "Física i Química", "Geografia i Història", "Llengua Catalana i Literatura", "Llengua Castellana i Literatura", "Llengua Estrangera", "Matemàtiques", "Música", "Tecnologia i Digitalització", "Religió / Atenció educativa", "Matèria personalitzada"],
+  "3r ESO": ["Biologia i Geologia", "Educació Física", "Física i Química", "Geografia i Història", "Llengua Catalana i Literatura", "Llengua Castellana i Literatura", "Llengua Estrangera", "Matemàtiques", "Tecnologia i Digitalització", "Religió / Atenció educativa", "Matèria optativa", "Matèria personalitzada"],
+  "4t ESO": ["Educació Física", "Geografia i Història", "Llengua Catalana i Literatura", "Llengua Castellana i Literatura", "Llengua Estrangera", "Matemàtiques A", "Matemàtiques B", "Biologia i Geologia", "Digitalització", "Economia i Emprenedoria", "Expressió Artística", "Física i Química", "Formació i Orientació Personal i Professional", "Llatí", "Música", "Tecnologia", "Matèria personalitzada"],
+  "1r Batxillerat": ["Llengua Catalana i Literatura I", "Llengua Castellana i Literatura I", "Llengua Estrangera I", "Educació Física", "Filosofia", "Matemàtiques I", "Matemàtiques Aplicades a les Ciències Socials I", "Física I", "Química I", "Biologia I", "Tecnologia i Enginyeria I", "Dibuix Tècnic I", "Història del Món Contemporani", "Economia", "Literatura Universal", "Matèria personalitzada"],
+  "2n Batxillerat": ["Llengua Catalana i Literatura II", "Llengua Castellana i Literatura II", "Llengua Estrangera II", "Història de la Filosofia", "Història", "Matemàtiques II", "Matemàtiques Aplicades a les Ciències Socials II", "Física II", "Química II", "Biologia II", "Tecnologia i Enginyeria II", "Dibuix Tècnic II", "Empresa i Disseny de Models de Negoci", "Geografia", "Història de l'Art", "Matèria personalitzada"]
+};
 let installPrompt = null;
 let currentFilter = "totes";
 let timelineMode = "sessions";
@@ -340,7 +349,7 @@ function formatDate(value) { if (!value) return "Sense data"; const date = parse
 function escapeHtml(text) { return String(text || "").replace(/[&<>'"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c])); }
 
 function render() {
-  renderGeneralConfig(); renderGroups(); renderGroupEditor(); renderAlerts(); renderSessions(); renderCalendar(); renderWeekly(); updateCalendarView(); renderTimeline(); renderIncidences(); renderStats(); renderGlobalStats(); renderDiagnostics();
+  renderGeneralConfig(); renderGroups(); renderGroupEditor(); renderTodayPanel(); renderAlerts(); renderSessions(); renderCalendar(); renderWeekly(); updateCalendarView(); renderTimeline(); renderIncidences(); renderStats(); renderGlobalStats(); renderDiagnostics();
 }
 
 function renderGeneralConfig() {
@@ -367,8 +376,53 @@ function renderGroupEditor() {
   $("groupEditorCard").classList.toggle("hidden", !group);
   if (!group) return;
   $("nivell").value = group.nivell; $("grup").value = group.grup; $("assignatura").value = group.assignatura;
+  renderSubjectPreset(group.nivell, group.assignatura);
   $("dataInici").value = group.dataInici; $("dataFinal").value = group.dataFinal; $("notesGenerals").value = group.notesGenerals;
   document.querySelectorAll('input[name="diesSetmana"]').forEach(input => { input.checked = group.diesSetmana.includes(input.value); });
+}
+
+function renderSubjectPreset(level, currentSubject = "") {
+  const select = $("assignaturaPreset");
+  if (!select) return;
+  const subjects = LOMLOE_SUBJECTS[level] || [];
+  select.innerHTML = `<option value="">Tria una matèria...</option>` + subjects.map(subject => `<option value="${escapeHtml(subject)}" ${subject === currentSubject ? "selected" : ""}>${escapeHtml(subject)}</option>`).join("");
+}
+
+function renderTodayPanel() {
+  const group = activeGroup();
+  const box = $("todayPanel");
+  if (!box) return;
+  if (!group) { box.innerHTML = `<p>Crea o selecciona un grup per veure què toca avui.</p>`; return; }
+  const today = todayISO();
+  const todaysSessions = group.sessions.filter(s => s.dataPrevista === today || s.dataReal === today).sort((a, b) => a.num - b.num);
+  const todaysIncidences = group.incidencies.filter(i => i.data === today);
+  const nextSession = group.sessions.filter(s => s.dataPrevista && s.dataPrevista >= today && !["feta", "cancel·lada"].includes(s.estat)).sort((a, b) => a.dataPrevista.localeCompare(b.dataPrevista) || a.num - b.num)[0];
+  let html = `<div class="today-header"><strong>${formatDate(today)}</strong><span class="pill small">${escapeHtml(group.nivell)} ${escapeHtml(group.grup)} · ${escapeHtml(group.assignatura || "Sense assignatura")}</span></div>`;
+  if (todaysIncidences.length) {
+    html += `<div class="today-warning"><strong>Incidències avui:</strong> ${todaysIncidences.map(i => escapeHtml(i.motiu || i.tipus)).join(", ")}</div>`;
+  }
+  if (todaysSessions.length) {
+    html += todaysSessions.map(session => `
+      <article class="today-session estat-${session.estat}">
+        <div>
+          <h3>Sessió ${session.num}: ${escapeHtml(session.titol || "Sense títol")}</h3>
+          ${session.queEsTreballa ? `<p><strong>Què es treballarà?</strong> ${escapeHtml(session.queEsTreballa)}</p>` : ""}
+          ${session.objectiu ? `<p><strong>Objectiu:</strong> ${escapeHtml(session.objectiu)}</p>` : ""}
+          <p><strong>Estat:</strong> ${escapeHtml(session.estat)}</p>
+        </div>
+        <div class="today-actions">
+          <button type="button" data-action="quick-state" data-id="${session.id}" data-state="feta">Feta</button>
+          <button class="secondary" type="button" data-action="quick-state" data-id="${session.id}" data-state="parcial">Parcial</button>
+          <button class="secondary" type="button" data-action="quick-state" data-id="${session.id}" data-state="ajornada">Ajornada</button>
+          <button class="secondary" type="button" data-action="edit-calendar-session" data-id="${session.id}">Observació / edita</button>
+        </div>
+      </article>`).join("");
+  } else if (nextSession) {
+    html += `<div class="today-empty"><p>No hi ha cap sessió prevista avui en aquest grup.</p><p><strong>Pròxima sessió:</strong> ${formatDate(nextSession.dataPrevista)} · Sessió ${nextSession.num}: ${escapeHtml(nextSession.titol || "Sense títol")}</p></div>`;
+  } else {
+    html += `<div class="today-empty"><p>No hi ha cap sessió prevista avui ni pròximes sessions pendents.</p></div>`;
+  }
+  box.innerHTML = html;
 }
 
 function renderAlerts() {
@@ -720,7 +774,7 @@ function renderGlobalStats() {
 async function cacheCount() { if (!("caches" in window)) return "No disponible"; const keys = await caches.keys(); return keys.length; }
 function renderDiagnostics() {
   const localOk = testLocalStorage(); const swOk = "serviceWorker" in navigator; const online = navigator.onLine;
-  $("diagnostics").innerHTML = `<div class="diag-box"><strong>${swOk ? "Sí" : "No"}</strong><span>Service worker disponible</span></div><div class="diag-box"><strong>${online ? "Online" : "Offline"}</strong><span>Connexió actual</span></div><div class="diag-box"><strong>${localOk ? "Sí" : "No"}</strong><span>localStorage</span></div><div class="diag-box"><strong>${localStorage.getItem(STORAGE_KEY) ? "Sí" : "No"}</strong><span>Dades locals v0.4.1</span></div><div class="diag-box"><strong>${APP_VERSION}</strong><span>Versió</span></div><div class="diag-box"><strong>${data.app.dataModificacio || "-"}</strong><span>Últim canvi</span></div>`;
+  $("diagnostics").innerHTML = `<div class="diag-box"><strong>${swOk ? "Sí" : "No"}</strong><span>Service worker disponible</span></div><div class="diag-box"><strong>${online ? "Online" : "Offline"}</strong><span>Connexió actual</span></div><div class="diag-box"><strong>${localOk ? "Sí" : "No"}</strong><span>localStorage</span></div><div class="diag-box"><strong>${localStorage.getItem(STORAGE_KEY) ? "Sí" : "No"}</strong><span>Dades locals v0.5.0</span></div><div class="diag-box"><strong>${APP_VERSION}</strong><span>Versió</span></div><div class="diag-box"><strong>${data.app.dataModificacio || "-"}</strong><span>Últim canvi</span></div>`;
   cacheCount().then(n => { const el = $("cacheCount"); if (el) el.textContent = n; });
 }
 function testLocalStorage() { try { localStorage.setItem("__test", "1"); localStorage.removeItem("__test"); return true; } catch { return false; } }
@@ -807,14 +861,17 @@ function bindEvents() {
   $("btnNextYear").addEventListener("click", () => duplicateGroup(true));
   $("btnDeleteGroup").addEventListener("click", deleteGroup);
   $("btnAddSession").addEventListener("click", () => addSession());
+  $("btnAddTodaySession")?.addEventListener("click", () => openNewSessionEditor(todayISO()));
   $("btnAddIncidence").addEventListener("click", addIncidence);
-  $("btnExportAll").addEventListener("click", () => exportJson(data, `planificador-docent-${data.cursAcademic}-v041.json`));
+  $("btnExportAll").addEventListener("click", () => exportJson(data, `planificador-docent-${data.cursAcademic}-v050.json`));
   $("btnExportGroup").addEventListener("click", () => { const g = activeGroup(); if (g) exportJson(g, `${slug(`${g.nivell}-${g.grup}-${g.assignatura}`)}.json`); });
   $("btnExportCsv").addEventListener("click", exportGroupCsv);
   $("btnPrintSummary").addEventListener("click", printSummary);
   $("btnPrintCalendar").addEventListener("click", printCalendar);
   $("btnDiagnostics").addEventListener("click", renderDiagnostics);
   $("groupSelector").addEventListener("change", (e) => { activeGroupId = e.target.value; render(); });
+  $("nivell").addEventListener("change", () => renderSubjectPreset($("nivell").value, $("assignatura").value));
+  $("assignaturaPreset")?.addEventListener("change", (e) => { if (e.target.value && e.target.value !== "Matèria personalitzada") $("assignatura").value = e.target.value; });
   $("sessionFilter").addEventListener("change", (e) => { currentFilter = e.target.value; renderSessions(); });
   $("timelineMode").addEventListener("change", (e) => { timelineMode = e.target.value; renderTimeline(); });
   $("btnPrevMonth").addEventListener("click", () => changeCalendarMonth(-1));
@@ -827,11 +884,32 @@ function bindEvents() {
   $("btnTodayWeek").addEventListener("click", setWeekToToday);
   $("importFile").addEventListener("change", (e) => e.target.files[0] && importJson(e.target.files[0]));
   $("btnBulkSessions").addEventListener("click", () => $("bulkDialog").showModal());
-  $("btnConfirmBulk").addEventListener("click", () => { const lines = $("bulkText").value.split("\n").map(x => x.trim()).filter(Boolean); lines.forEach(line => { const [titol, queEsTreballa, objectiu, bloc] = line.split(";").map(x => x?.trim() || ""); addSession({ titol, queEsTreballa, objectiu, bloc }); }); $("bulkText").value = ""; $("bulkDialog").close(); saveData("Sessions creades"); });
+  $("btnConfirmBulk").addEventListener("click", () => {
+    const lines = $("bulkText").value.split("\n").map(x => x.trim()).filter(Boolean);
+    if (lines.length) {
+      lines.forEach(line => { const [titol, queEsTreballa, objectiu, bloc] = line.split(";").map(x => x?.trim() || ""); addSession({ titol, queEsTreballa, objectiu, bloc }); });
+    } else {
+      const count = Math.max(1, Math.min(80, Number($("bulkCount")?.value || 10)));
+      const prefix = ($("bulkPrefix")?.value || "Sessió").trim();
+      const bloc = ($("bulkBloc")?.value || "").trim();
+      for (let i = 1; i <= count; i++) addSession({ titol: `${prefix} ${i}`, bloc, queEsTreballa: "", objectiu: "" });
+    }
+    $("bulkText").value = ""; $("bulkDialog").close(); saveData("Sessions creades");
+  });
   $("btnSaveSessionDialog").addEventListener("click", saveSessionEditor);
   ["cursAcademic", "nomCentre", "docent", "diesNoLectiusGenerals"].forEach(id => { $(id).addEventListener("change", () => { data.cursAcademic = $("cursAcademic").value.trim() || guessAcademicYear(); data.configuracio.nomCentre = $("nomCentre").value.trim(); data.configuracio.docent = $("docent").value.trim(); data.configuracio.diesNoLectiusGenerals = $("diesNoLectiusGenerals").value.split("\n").map(x => x.trim()).filter(Boolean); data.grups.forEach(recalculateGroup); saveData("Configuració actualitzada"); }); });
   document.body.addEventListener("change", (e) => { const target = e.target; if (target.dataset.action === "edit-session") updateSession(target.dataset.id, { [target.dataset.field]: target.value || null }); if (target.dataset.action === "edit-session-list") updateSession(target.dataset.id, { [target.dataset.field]: stringToList(target.value) }); });
-  document.body.addEventListener("click", (e) => { const button = e.target.closest("button"); if (!button) return; if (button.dataset.action === "delete-session") deleteSession(button.dataset.id); if (button.dataset.action === "delete-incidence") deleteIncidence(button.dataset.id); if (button.dataset.action === "move-up") moveSession(button.dataset.id, -1); if (button.dataset.action === "move-down") moveSession(button.dataset.id, 1); if (button.dataset.action === "show-calendar-day") showCalendarDay(button.dataset.date); if (button.dataset.action === "add-calendar-session") openNewSessionEditor(button.dataset.date); if (button.dataset.action === "edit-calendar-session") openSessionEditor(button.dataset.id); });
+  document.body.addEventListener("click", (e) => {
+    const button = e.target.closest("button"); if (!button) return;
+    if (button.dataset.action === "delete-session") deleteSession(button.dataset.id);
+    if (button.dataset.action === "delete-incidence") deleteIncidence(button.dataset.id);
+    if (button.dataset.action === "move-up") moveSession(button.dataset.id, -1);
+    if (button.dataset.action === "move-down") moveSession(button.dataset.id, 1);
+    if (button.dataset.action === "show-calendar-day") showCalendarDay(button.dataset.date);
+    if (button.dataset.action === "add-calendar-session") openNewSessionEditor(button.dataset.date);
+    if (button.dataset.action === "edit-calendar-session") openSessionEditor(button.dataset.id);
+    if (button.dataset.action === "quick-state") updateSession(button.dataset.id, { estat: button.dataset.state, dataReal: ["feta", "parcial", "substituïda"].includes(button.dataset.state) ? todayISO() : null });
+  });
   $("btnClearData").addEventListener("click", () => { if (!confirm("Aquesta acció eliminarà totes les planificacions desades en aquest navegador. Vols continuar?")) return; localStorage.removeItem(STORAGE_KEY); data = defaultData(); activeGroupId = null; render(); });
   $("btnClearCache").addEventListener("click", async () => { if (!("caches" in window)) return alert("Aquest navegador no informa de cap cache disponible."); const keys = await caches.keys(); await Promise.all(keys.map(key => caches.delete(key))); alert("Cache esborrada. Recarrega l'aplicació."); });
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installPrompt = e; $("btnInstall").classList.remove("hidden"); });

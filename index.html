@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#5f8f73">
-  <meta name="description" content="PWA per planificar sessions de classe, fer seguiment i reprogramar automàticament incidències. Versió 0.4.0.">
+  <meta name="description" content="PWA per planificar sessions de classe, fer seguiment i reprogramar automàticament incidències. Versió 0.5.0.">
   <title>Planificador docent · Sessions i seguiment de curs</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
@@ -30,6 +30,17 @@
         <p>Crea grups, introdueix sessions, assigna dates automàticament i reprograma quan hi ha vagues, sortides, festes o altres incidències.</p>
       </div>
       <div class="quick-stats" id="globalStats"></div>
+    </section>
+
+    <section class="card full-width today-card" id="todayPanelCard">
+      <div class="section-title-row">
+        <div>
+          <h2>Avui a classe</h2>
+          <p class="hint">Vista ràpida per al mòbil: què toca avui i botons per registrar-ho en pocs clics.</p>
+        </div>
+        <button id="btnAddTodaySession" class="secondary" type="button">Afegeix sessió avui</button>
+      </div>
+      <div id="todayPanel" class="today-panel"></div>
     </section>
 
     <section class="card">
@@ -77,6 +88,9 @@
         <label>Grup
           <input id="grup" type="text" placeholder="A, B, C...">
         </label>
+        <label>Matèria ràpida LOMLOE
+          <select id="assignaturaPreset"></select>
+        </label>
         <label>Assignatura
           <input id="assignatura" type="text" placeholder="Tecnologia i Digitalització">
         </label>
@@ -90,13 +104,13 @@
           <input id="notesGenerals" type="text" placeholder="Opcional">
         </label>
       </div>
-      <fieldset class="weekday-box">
+      <fieldset class="weekday-box weekday-pills">
         <legend>Dies de classe</legend>
-        <label><input type="checkbox" name="diesSetmana" value="dilluns"> Dilluns</label>
-        <label><input type="checkbox" name="diesSetmana" value="dimarts"> Dimarts</label>
-        <label><input type="checkbox" name="diesSetmana" value="dimecres"> Dimecres</label>
-        <label><input type="checkbox" name="diesSetmana" value="dijous"> Dijous</label>
-        <label><input type="checkbox" name="diesSetmana" value="divendres"> Divendres</label>
+        <label><input type="checkbox" name="diesSetmana" value="dilluns"><span>Dilluns</span></label>
+        <label><input type="checkbox" name="diesSetmana" value="dimarts"><span>Dimarts</span></label>
+        <label><input type="checkbox" name="diesSetmana" value="dimecres"><span>Dimecres</span></label>
+        <label><input type="checkbox" name="diesSetmana" value="dijous"><span>Dijous</span></label>
+        <label><input type="checkbox" name="diesSetmana" value="divendres"><span>Divendres</span></label>
       </fieldset>
       <div class="button-row wrap">
         <button id="btnUpdateGroup" type="button">Actualitza grup</button>

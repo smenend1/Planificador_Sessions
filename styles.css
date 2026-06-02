@@ -456,3 +456,54 @@ dialog { border: 0; border-radius: 18px; box-shadow: var(--shadow); width: min(9
     font-size: 1.05rem;
   }
 }
+
+/* Millores v0.5: vista Avui, checklist docent i selectors ràpids */
+.today-panel { display: grid; gap: .75rem; }
+.today-header { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
+.today-session {
+  border: 1px solid var(--border);
+  border-left: 8px solid var(--primary-soft);
+  border-radius: 16px;
+  padding: .9rem;
+  background: #fff;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: start;
+}
+.today-actions { display: flex; gap: .45rem; flex-wrap: wrap; justify-content: flex-end; }
+.today-warning, .today-empty {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: .75rem;
+  background: #fffaf0;
+}
+.weekday-pills { align-items: center; }
+.weekday-pills label { display: inline-flex; padding: 0; }
+.weekday-pills input { position: absolute; opacity: 0; pointer-events: none; }
+.weekday-pills span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: .7rem .95rem;
+  background: #fff;
+  color: var(--primary-dark);
+  min-width: 92px;
+  cursor: pointer;
+}
+.weekday-pills input:checked + span {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  box-shadow: 0 6px 16px rgba(95, 143, 115, .2);
+}
+
+@media (max-width: 860px) {
+  .today-session { grid-template-columns: 1fr; }
+  .today-actions { justify-content: stretch; }
+  .today-actions button { flex: 1 1 46%; }
+  .weekday-pills { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .weekday-pills label, .weekday-pills span { width: 100%; }
+}

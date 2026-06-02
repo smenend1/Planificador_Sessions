@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#5f8f73">
-  <meta name="description" content="PWA per planificar sessions de classe, fer seguiment i reprogramar automàticament incidències. Versió 0.5.0.">
+  <meta name="description" content="PWA per planificar sessions de classe, fer seguiment i reprogramar automàticament incidències. Versió 0.5.1.">
   <title>Planificador docent · Sessions i seguiment de curs</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
@@ -58,6 +58,35 @@
         <label>Dies no lectius generals
           <textarea id="diesNoLectiusGenerals" rows="3" placeholder="Una data per línia: 2025-12-08"></textarea>
         </label>
+      </div>
+    </section>
+
+
+
+    <section class="card full-width consolidation-card">
+      <div class="section-title-row">
+        <div>
+          <h2>1.1 Control del curs i còpia de seguretat</h2>
+          <p class="hint">Consolidació: comprova quin curs tens actiu i descarrega una còpia JSON abans de fer canvis importants.</p>
+        </div>
+        <button id="btnBackupNow" type="button">Descarrega còpia de seguretat</button>
+      </div>
+      <div class="grid three">
+        <label>Curs actiu de treball
+          <select id="activeAcademicYearSelect"></select>
+        </label>
+        <div class="info-box">
+          <strong id="activeCourseInfo">-</strong>
+          <span>Grups del curs actiu</span>
+        </div>
+        <div class="info-box">
+          <strong id="lastBackupInfo">Encara no</strong>
+          <span>Última còpia JSON feta des d'aquesta app</span>
+        </div>
+      </div>
+      <div class="button-row wrap compact">
+        <button id="btnApplyAcademicYear" class="secondary" type="button">Canvia al curs seleccionat</button>
+        <span class="hint">Això només canvia el curs general actiu. No elimina ni modifica els grups d'altres cursos.</span>
       </div>
     </section>
 
@@ -122,6 +151,19 @@
     <section class="card full-width">
       <h2>4. Avisos del grup</h2>
       <div id="alertsPanel" class="alerts-panel"></div>
+    </section>
+
+
+
+    <section class="card full-width">
+      <div class="section-title-row">
+        <div>
+          <h2>4.1 Revisió de dades</h2>
+          <p class="hint">Detecta possibles problemes abans d'imprimir, exportar o continuar reprogramant.</p>
+        </div>
+        <button id="btnRunDataReview" class="secondary" type="button">Revisa ara</button>
+      </div>
+      <div id="dataReviewPanel" class="review-panel"></div>
     </section>
 
     <section class="card full-width">
@@ -247,6 +289,7 @@
       <h2>10. Exportació, importació i resum</h2>
       <div class="button-row wrap">
         <button id="btnExportAll" type="button">Exporta tot JSON</button>
+        <button id="btnBackupNow2" class="secondary" type="button">Còpia de seguretat</button>
         <button id="btnExportGroup" class="secondary" type="button">Exporta grup JSON</button>
         <button id="btnExportCsv" class="secondary" type="button">Exporta sessions CSV</button>
         <label class="file-button">Importa JSON
@@ -258,9 +301,29 @@
       <div id="printArea" class="print-area hidden"></div>
     </section>
 
+
+
+    <section class="card full-width help-card">
+      <h2>11. Ajuda ràpida</h2>
+      <div class="help-grid">
+        <article>
+          <h3>Reprogramació</h3>
+          <p>Quan recalcules, l'app busca els dies de classe disponibles i desplaça les sessions futures. Les sessions fetes, parcials o substituïdes amb data real no es mouen.</p>
+        </article>
+        <article>
+          <h3>Dates fixades</h3>
+          <p>Una sessió creada des del calendari queda fixada manualment. Pots desmarcar aquesta opció dins l'editor de sessió.</p>
+        </article>
+        <article>
+          <h3>Còpies de seguretat</h3>
+          <p>Les dades són locals del navegador. Abans de netejar cache, canviar de dispositiu o fer canvis grans, descarrega un JSON.</p>
+        </article>
+      </div>
+    </section>
+
     <section class="card full-width">
       <div class="section-title-row">
-        <h2>11. Diagnòstic PWA</h2>
+        <h2>12. Diagnòstic PWA</h2>
         <button id="btnDiagnostics" class="secondary" type="button">Comprova diagnòstic</button>
       </div>
       <div id="diagnostics" class="diagnostics"></div>

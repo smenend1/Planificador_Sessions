@@ -1,18 +1,20 @@
 # Planificador docent · Sessions i seguiment de curs
 
-Versió 0.5.0.
+Versió 0.5.1.
 
 PWA educativa en català per planificar sessions de classe per curs, grup i assignatura, fer seguiment del curs i reprogramar automàticament les sessions quan hi ha incidències.
 
-## Novetats de la v0.5.0
+## Novetats de la v0.5.1
 
-- Targeta **Avui a classe** amb accions ràpides per marcar sessions com a fetes, parcials o ajornades.
-- Botó per afegir una sessió directament al dia d'avui.
-- Selector ràpid de matèries LOMLOE per nivell, mantenint l'opció d'escriure una assignatura personalitzada.
-- Selector de dies de classe més còmode en mòbil amb botons grans.
-- Creació ràpida de seqüències de sessions per nombre, prefix i bloc/unitat.
-- Millores de checklist docent per reduir clics durant el dia a dia.
-- Manté la vista mensual, la vista setmanal, l'edició ràpida, el CSV, el resum imprimible i la reprogramació automàtica de versions anteriors.
+Versió de consolidació. No afegeix cap mòdul complex nou; reforça opcions que ja funcionaven.
+
+- Control més clar del curs acadèmic actiu.
+- Còpia de seguretat JSON més visible.
+- Registre intern de l'última còpia feta des de l'app.
+- Revisió de dades per detectar grups sense calendari complet, sessions sense data, sessions fora de calendari i possibles duplicats de dia.
+- Ajuda ràpida dins l'app sobre reprogramació, dates fixades i còpies de seguretat.
+- Diagnòstic i service worker actualitzats a v0.5.1.
+- Migració automàtica des de v0.5.0 i versions anteriors.
 
 ## Funcions principals
 
@@ -51,7 +53,7 @@ PWA educativa en català per planificar sessions de classe per curs, grup i assi
 
 ## Nota de migració
 
-La versió 0.5.0 migra automàticament dades locals de versions anteriors. Es recomana exportar una còpia JSON abans de substituir fitxers en producció.
+La versió 0.5.1 migra automàticament dades locals de versions anteriors, inclosa la v0.5.0. Es recomana exportar una còpia JSON abans de substituir fitxers en producció.
 
 ## Notes
 

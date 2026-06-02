@@ -507,3 +507,62 @@ dialog { border: 0; border-radius: 18px; box-shadow: var(--shadow); width: min(9
   .weekday-pills { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .weekday-pills label, .weekday-pills span { width: 100%; }
 }
+
+/* Consolidació v0.5.1: còpies, curs actiu, revisió i ajuda */
+.consolidation-card {
+  border-left: 8px solid var(--primary);
+}
+.info-box {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: .75rem;
+  background: #fafffb;
+  display: grid;
+  gap: .25rem;
+}
+.info-box strong {
+  font-size: 1.1rem;
+}
+.info-box span {
+  color: var(--muted);
+  font-size: .9rem;
+}
+.review-panel {
+  display: grid;
+  gap: .55rem;
+}
+.review-item {
+  border: 1px solid var(--border);
+  border-left: 7px solid var(--primary-soft);
+  border-radius: 14px;
+  padding: .75rem .85rem;
+  background: #fff;
+  font-weight: 700;
+}
+.review-item.ok {
+  border-left-color: #4b8f5b;
+  background: #f5fff7;
+}
+.review-item.warn {
+  border-left-color: #d9a934;
+  background: #fffaf0;
+}
+.review-item.info {
+  border-left-color: #5c82c7;
+  background: #f4f8ff;
+}
+.help-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .75rem;
+}
+.help-grid article {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: .8rem;
+  background: #fafffb;
+}
+@media (max-width: 860px) {
+  .help-grid { grid-template-columns: 1fr; }
+  .consolidation-card .section-title-row button { width: 100%; }
+}
